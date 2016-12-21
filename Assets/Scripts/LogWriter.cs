@@ -41,26 +41,10 @@ public class LogWriter : MonoBehaviour {
 
         // create a directory to store all the logs produced in a session
         Directory.CreateDirectory(_directoryPath);
-
-        string filePath = Path.Combine(LogWriter.instance.GetDirectory(), "positions.txt");
-        StreamWriter sw = File.CreateText(filePath);
-        sw.Close();
     }
 
     public void WriteLogs(ObjectsManager objectManager, ArrayList logPositions) {
-        /*
-        outputData = new JSONClass();
-
-        outputData["patient_id"] = PlayerPrefs.GetString("PatientId");
-        outputData["training_type"] = PlayerPrefs.GetString("TrainingMode");
-        outputData["total_time"].AsFloat = objectManager.GetTotalElapsedTime();
-        outputData["no_objects_caught"].AsInt = objectManager.GetNumberOfObjectsCaught();
-        outputData["no_objects"].AsInt = objectManager.GetNumberOfObjects();
-        outputData["objects"] = objectManager.GetObjectsData();
-        //outputData["positions"] = patient.GetComponent<FlatAvatarController>().GetPositionsLog();*/
-
         Debug.Log("Starting to dump data to file: " + DateTime.Now.ToLongTimeString() );
-        Debug.Log("No Position Objects: " + patient.GetComponent<FlatAvatarController>().GetPositionsLog().Count);
 
         string trainingMode = PlayerPrefs.GetString("TrainingMode").Replace(" ", "");
         string timestamp = DateTime.Now.ToString("yyyyMMddHHmmssffff");
@@ -87,14 +71,7 @@ public class LogWriter : MonoBehaviour {
         }
 
         Debug.Log("Finishing dumping data " + DateTime.Now.ToLongTimeString());
-
     }
-
-    public void WritePositionLog(JSONData data) {
-        string filePath = Path.Combine(_directoryPath, "positions");
-        File.AppendAllText(filePath, data.ToString());
-    }
-
 
     // Getters
     public string GetDirectory() {

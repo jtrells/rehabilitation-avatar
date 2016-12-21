@@ -16,7 +16,9 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	public Text labelLeft, labelRight, labelMode, labelHelp; 
 	public GameObject sessionCompleteAnimation;
 	public AudioSource voice;
-	private bool tutorialMode = false, lastPhaseOfTutorial = false; 
+	private bool tutorialMode = false, lastPhaseOfTutorial = false;
+
+    public Text labelHands;
 
 	private static SessionManager instance;
 	private float xAvatarSize = 0.3f;
@@ -530,14 +532,14 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 	public void DistortedRealityMode() {
 		FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
-		if(script.isDistortedReality) {
-			script.isDistortedReality = false;
+		if(script.IsDistortedReality()) {
+			script.SetDistortedReality(false);
 			isDistortedMode = false;
             _trainingMode = "N";
 		//	ToggleCameraEffect();
 		}
 		else {
-			script.isDistortedReality = true;
+			script.SetDistortedReality(true);
 			isDistortedMode = true;
             _trainingMode = "D";
 		//	ToggleCameraEffect();
@@ -636,6 +638,9 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			}
 		}
 		if(!isTimerStopped) UpdateTime();
+
+        Vector3 rightHand = avatarController.rightHand.transform.position;
+        labelHands.text = "RH: (" + rightHand.x.ToString("0.00") + ", " + rightHand.y.ToString("0.00") + ", " + rightHand.z.ToString("0.00") + ")";
 	}
 
 	public void DisplayText(string text) {
@@ -719,22 +724,4 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	public void PatientInPosition() {
 		patientInsideCircle = true;
 	}
-
-    IEnumerator LogPositionsCoroutine() {
-        yield return null;
-        Debug.Log("Starting positions coroutine");
-        string filePath = Path.Combine(LogWriter.instance.GetDirectory(), "positions.txt");
-        StreamWriter sw = File.AppendText(filePath);
-
-        while (_status == (int)ExerciseStatus.Running) {
-            string log = avatarController.GetLog2Dump();
-            if (log != null) sw.WriteLine(log);
-           
-            yield return new WaitForSeconds(1f / 10);
-        };
-
-        sw.Close();
-        yield return null;
-    }
-
 }

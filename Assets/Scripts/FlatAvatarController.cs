@@ -7,12 +7,11 @@ using SimpleJSON;
 public class FlatAvatarController : OmicronEventClient {
 
 	protected float samplingRate = 5f;
-	protected JSONArray positions = new JSONArray();
     public ArrayList jointsLog = new ArrayList();
 
-	private bool isThirdPerson = true;
-	public bool isPatient = false;
-	public bool isDistortedReality;
+	private bool _isThirdPerson = true;
+	public bool _isPatient = false;
+	private bool _isDistortedReality;
 
 	public GameObject protoGuyBody, protoGuyHead;
 	public GameObject[] bodyParts;
@@ -22,42 +21,40 @@ public class FlatAvatarController : OmicronEventClient {
 	public int bodyId = -1;
 
 	public OmicronKinectManager kinectManager;
+    public GameObject kinect;
 	
 	public GameObject hips, leftHand, rightHand, leftElbow, rightElbow, leftShoulder, rightShoulder;
 	public GameObject leftHip, rightHip, leftKnee, rightKnee, leftFoot, rightFoot;
-	public GameObject kinect;
-
 
 	public enum KinectHandState { Unknown, NotTracked, Open, Closed, Lasso };
 	private KinectHandState leftHandState, rightHandState;
 
+    private Vector3 _offset;
 
-
-	//public Transform leftHandIndicator, rightHandIndicator;
-	//private Vector3 kinectPosition;
-	//public GameObject leftFinger, rightFinger;
-	//private float verticalDistance, horizontalDistance, verticalMultiplier, horizontalMultiplier;
-
-
-
-
+    public bool IsThirdPerson() { return _isThirdPerson; }
+    public bool IsPatient() { return _isPatient; }
+    public bool IsDistortedReality() { return _isDistortedReality; }
+    public void SetDistortedReality(bool state) { _isDistortedReality = state; }
 
 	void Start() {
 		OmicronManager omicronManager = GameObject.FindGameObjectWithTag("OmicronManager").GetComponent<OmicronManager>();
 		omicronManager.AddClient(this);
-		if(isPatient) {
-			StartCoroutine(LogPositionsCoroutine());
-		}
-	}
 
-	//Fetch data gathered from Kinect
+        // Set an offset on the Y axis as the kinect is above the ground
+        // and the kinect's coordinate system is set at the infrared sensor
+        //_offset = new Vector3(0, -kinectManager.transform.position.y, 0);
+        _offset = new Vector3(0, 0, 0);
+    }
+
+	// Fecth data from the kinect in a Omicron Mocap EventData object. Update the data positions based on the sampling
+    // frequency provided by the Kinect v2
 	void OnEvent(EventData e) {
-		if (e.serviceType == EventBase.ServiceType.ServiceTypeMocap) {
-			//Update joints position and state
+		if (e.serviceType == EventBase.ServiceType.ServiceTypeMocap)
 			UpdateJointsPosition(e);
-		}
 	}
 
+    // Get the joints position from the array of vectors in Omicron. The structure
+    // requires on this version (don't know the version) to pass the jointID
 	private Vector3 GetJointPosition(EventData e, int jointId) {
 		float[] jointPosition = new float[3];
 		e.getExtraDataVector3(jointId, jointPosition);
@@ -65,89 +62,74 @@ public class FlatAvatarController : OmicronEventClient {
 		return new Vector3(jointPosition[0], jointPosition[1], -jointPosition[2]);
 	}
 
+    /*
 	private int GetJointNumber(EventData e) {
 		return (int) e.extraDataItems;
-	}
+	}*/
 
 	private KinectHandState FetchHandState(float value) {
-		switch((int) value) {
-		case(0): return KinectHandState.Unknown;
-		case(1): return KinectHandState.NotTracked;
-		case(2): return KinectHandState.Open;
-		case(3): return KinectHandState.Closed;
-		case(4): return KinectHandState.Lasso;
-		default: return KinectHandState.Unknown;
-		}
+        if (value == 0) return KinectHandState.Unknown;
+        else if (value == 1) return KinectHandState.NotTracked;
+        else if (value == 2) return KinectHandState.Open;
+        else if (value == 3) return KinectHandState.Closed;
+        else if (value == 4) return KinectHandState.Lasso;
+        else  return KinectHandState.Unknown;
 	}
 	
-
+    // Update all the avatar joints positions based on the fetched data
 	private void UpdateJointsPosition(EventData e) {
 
-		if (e.serviceType != EventBase.ServiceType.ServiceTypeMocap) {
-			return;
-		}
-
+		if (e.serviceType != EventBase.ServiceType.ServiceTypeMocap) return;
+		
 		int sourceId = (int)e.sourceId;
-		if(bodyId != sourceId) {
-			return;
-		}
+		if (bodyId != sourceId) return;
 
-		/*float shoulderDistance = Vector3.Distance(GetJointPosition(e, 6), GetJointPosition(e, 16));
-		horizontalMultiplier = horizontalDistance / shoulderDistance;
-
-		verticalMultiplier = verticalDistance / GetJointPosition(e, 1).y;*/
-
-		if (!isDistortedReality) {
+		if (!_isDistortedReality) {
 			UpdateHipsPosition (e);
-			UpdateJointPosition (leftElbow, e, 7);
-			UpdateJointPosition (rightElbow, e, 17);
+			UpdateJointPosition (leftElbow, e, 7, _offset);
+			UpdateJointPosition (rightElbow, e, 17, _offset);
 				
-			UpdateJointPosition (leftHand, e, 9);
-			UpdateJointPosition (rightHand, e, 19);
+			UpdateJointPosition (leftHand, e, 9, _offset);
+			UpdateJointPosition (rightHand, e, 19, _offset);
 
-			UpdateJointPosition (leftShoulder, e, 6); //, new Vector3(-0.1f, -0.1f, 0f));
-			UpdateJointPosition (rightShoulder, e, 16); //, new Vector3(0.1f, -0.1f, 0f));
+			UpdateJointPosition (leftShoulder, e, 6, _offset);
+            UpdateJointPosition(rightShoulder, e, 16, _offset);
 			leftHandState = FetchHandState(e.orw);
 			rightHandState = FetchHandState(e.orx);
 			
-			UpdateJointPosition (leftHip, e, 11);
-			UpdateJointPosition (rightHip, e, 21);
+			UpdateJointPosition (leftHip, e, 11, _offset);
+			UpdateJointPosition (rightHip, e, 21, _offset);
 			
-			UpdateJointPosition (leftKnee, e, 12);
-			UpdateJointPosition (rightKnee, e, 22);
+			UpdateJointPosition (leftKnee, e, 12, _offset);
+			UpdateJointPosition (rightKnee, e, 22, _offset);
 			
-			UpdateJointPosition (leftFoot, e, 13);
-			UpdateJointPosition (rightFoot, e, 23);
+			UpdateJointPosition (leftFoot, e, 13, _offset);
+			UpdateJointPosition (rightFoot, e, 23, _offset);
 		} else {
 			UpdateHipsPositionDistorted(e);
-			UpdateJointPositionDistorted (leftElbow, e, 17);
-			UpdateJointPositionDistorted (rightElbow, e, 7);
+			UpdateJointPositionDistorted (leftElbow, e, 17,_offset);
+			UpdateJointPositionDistorted (rightElbow, e, 7, _offset);
 			
-			UpdateJointPositionDistorted (leftHand, e, 19);
-			UpdateJointPositionDistorted (rightHand, e, 9);
+			UpdateJointPositionDistorted (leftHand, e, 19, _offset);
+			UpdateJointPositionDistorted (rightHand, e, 9, _offset);
 			
-			UpdateJointPositionDistorted (leftShoulder, e, 16); //, new Vector3(-0.1f, -0.1f, 0f));
-			UpdateJointPositionDistorted (rightShoulder, e, 6);
+			UpdateJointPositionDistorted (leftShoulder, e, 16, _offset);
+			UpdateJointPositionDistorted (rightShoulder, e, 6, _offset);
 
-			UpdateJointPositionDistorted (leftHip, e, 21);
-			UpdateJointPositionDistorted (rightHip, e, 11);
+			UpdateJointPositionDistorted (leftHip, e, 21, _offset);
+			UpdateJointPositionDistorted (rightHip, e, 11, _offset);
 			
-			UpdateJointPositionDistorted (leftKnee, e, 22);
-			UpdateJointPositionDistorted (rightKnee, e, 12);
+			UpdateJointPositionDistorted (leftKnee, e, 22, _offset);
+			UpdateJointPositionDistorted (rightKnee, e, 12, _offset);
 			
-			UpdateJointPositionDistorted (leftFoot, e, 23);
-			UpdateJointPositionDistorted (rightFoot, e, 13);
+			UpdateJointPositionDistorted (leftFoot, e, 23, _offset);
+			UpdateJointPositionDistorted (rightFoot, e, 13, _offset);
 		}
-
-
-
-
-		//UpdateJointPosition (leftFinger, e, 10);
-		//UpdateJointPosition (rightFinger, e, 20);
 
 		lastUpdate = Time.time;
 	}
 
+    // Get the string value for each joint id for log purposes
     private string GetJointName(int jointId) {
         if (jointId == 7) return "left_elbow";
         if (jointId == 17) return "right_elbow";
@@ -166,7 +148,6 @@ public class FlatAvatarController : OmicronEventClient {
 
     private void addNewLogPosition(int jointId, Vector3 position, Quaternion rotation) {
         JSONNode positionLog = new JSONClass();
-
         positionLog["joint"] = GetJointName(jointId);
         positionLog["time"].AsFloat = Time.time;
         positionLog["x"].AsFloat = position.x;
@@ -176,81 +157,45 @@ public class FlatAvatarController : OmicronEventClient {
         positionLog["ry"].AsFloat = rotation.y;
         positionLog["rz"].AsFloat = rotation.z;
         positionLog["rw"].AsFloat = rotation.w;
-        //positions.Add(positionLog);
 
         jointsLog.Add(positionLog.ToString());
     }
 
+    // Get new position and update localTransform value
 	private void UpdateJointPosition(GameObject joint, EventData e, int jointId, Vector3 optionalOffset = default(Vector3)) {
 		Vector3 newPosition = GetJointPosition(e, jointId);
+        if (_isDistortedReality) newPosition = new Vector3(-newPosition.x, newPosition.y, newPosition.z);
+        UpdateAndLogPosition(joint, jointId, newPosition, optionalOffset);
+    }
 
-        if (!newPosition.Equals(Vector3.zero)) {
-			joint.transform.localPosition = newPosition + new Vector3(0f, isThirdPerson ? yOffset : 0f, isThirdPerson ? zOffset : 0f) + optionalOffset;
-            if (SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Running)
-                addNewLogPosition(jointId, joint.transform.position, joint.transform.rotation);
-		}
-	}
-
+    // Update joint values for distorted mode. The method was divided to avoid a bunch of if statements while sending the jointIds values
 	private void UpdateJointPositionDistorted(GameObject joint, EventData e, int jointId, Vector3 optionalOffset = default(Vector3)) {
 		Vector3 newPosition = GetJointPosition(e, jointId);
 		newPosition = new Vector3(-newPosition.x, newPosition.y, newPosition.z);
-		if(!newPosition.Equals(Vector3.zero)) {
-			joint.transform.localPosition = newPosition +  new Vector3(0f, isThirdPerson ? yOffset : 0f, isThirdPerson ? zOffset : 0f) + optionalOffset;
+        UpdateAndLogPosition(joint, jointId, newPosition, optionalOffset);
+	}
+
+    private void UpdateAndLogPosition(GameObject joint, int jointId, Vector3 newPosition, Vector3 offset) {
+        if (!newPosition.Equals(Vector3.zero)){
+            joint.transform.localPosition = newPosition + new Vector3(0f, _isThirdPerson ? yOffset : 0f, _isThirdPerson ? zOffset : 0f) + offset;
+            // Only store information while the user is running an exercise. Avoid pre-settings, pause and finished states
             if (SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Running)
                 addNewLogPosition(jointId, joint.transform.position, joint.transform.rotation);
         }
-	}
+    }
 
 	private void UpdateHipsPosition(EventData e) {
 		Vector3 newPosition = GetJointPosition(e, 0);
 		if(!newPosition.Equals(Vector3.zero)) {
-			hips.transform.localPosition = new Vector3(newPosition.x, newPosition.y, newPosition.z) + new Vector3(0f, yOffset, zOffset);
+			hips.transform.localPosition = new Vector3(newPosition.x, newPosition.y, newPosition.z) + new Vector3(0f, yOffset, zOffset) + _offset;
 		}
 	}
 
 	private void UpdateHipsPositionDistorted(EventData e) {
 		Vector3 newPosition = GetJointPosition(e, 0);
 		if(!newPosition.Equals(Vector3.zero)) {
-			hips.transform.localPosition = new Vector3(-newPosition.x, newPosition.y, newPosition.z) + new Vector3(0f, yOffset, zOffset);
+			hips.transform.localPosition = new Vector3(-newPosition.x, newPosition.y, newPosition.z) + new Vector3(0f, yOffset, zOffset) + _offset;
 		}
-	}
-
-	IEnumerator LogPositionsCoroutine() {
-		while(!SessionManager.GetInstance().IsTimerStopped()) {
-			yield return new WaitForSeconds(1f / samplingRate);
-			JSONNode newPos = new JSONClass();
-			newPos["time"].AsFloat = Time.time;
-
-			JSONArray leftHandPos = new JSONArray();
-			leftHandPos[0].AsFloat = leftHand.transform.position.x;
-			leftHandPos[1].AsFloat = leftHand.transform.position.y;
-			leftHandPos[2].AsFloat = leftHand.transform.position.z;
-			newPos["leftHand"] = leftHandPos;
-
-			JSONArray rightHandPos = new JSONArray();
-			rightHandPos[0].AsFloat = rightHand.transform.position.x;
-			rightHandPos[1].AsFloat = rightHand.transform.position.y;
-			rightHandPos[2].AsFloat = rightHand.transform.position.z;
-			newPos["rightHand"] = rightHandPos;
-
-			JSONArray leftElbowPos = new JSONArray();
-			leftElbowPos[0].AsFloat = leftElbow.transform.position.x;
-			leftElbowPos[1].AsFloat = leftElbow.transform.position.y;
-			leftElbowPos[2].AsFloat = leftElbow.transform.position.z;
-			newPos["leftElbow"] = leftElbowPos;
-			
-			JSONArray rightElbowPos = new JSONArray();
-			rightElbowPos[0].AsFloat = rightElbow.transform.position.x;
-			rightElbowPos[1].AsFloat = rightElbow.transform.position.y;
-			rightElbowPos[2].AsFloat = rightElbow.transform.position.z;
-			newPos["rightElbow"] = rightElbowPos;
-
-			positions.Add(newPos);
-		}
-	}
-
-	public JSONArray GetPositionsLog() {
-		return positions;
 	}
 
 	private void KillAvatar() {
@@ -262,18 +207,14 @@ public class FlatAvatarController : OmicronEventClient {
 	private void KillPatient() {
 		SetFlaggedForRemoval();
 		kinectManager.RemoveBody(bodyId);
-		//Destroy(gameObject);
 	}
 
-
-
 	void LateUpdate() {
-		if(!isPatient && kinectManager.GetPatientId() == bodyId) {
+		if (!_isPatient && kinectManager.GetPatientId() == bodyId) 
 			KillAvatar();
-		}
-
+		
 		if (Time.time > lastUpdate + timeout) {
-			if(!isPatient) {
+			if (!_isPatient) {
 				KillAvatar();
 			} else if (bodyId != -1) {
 				KillPatient();
@@ -288,34 +229,20 @@ public class FlatAvatarController : OmicronEventClient {
 		lastUpdate = Time.time;
 	}
 
+    // Only enable body elements in first person
 	public void SetFirstPerson() {
-		isThirdPerson = false;
+		_isThirdPerson = false;
 		protoGuyHead.SetActive(false);
 		protoGuyBody.SetActive(false);
-		foreach(GameObject g in bodyParts) {
-			g.SetActive(true);
-		}
+
+		foreach(GameObject g in bodyParts) g.SetActive(true);
 	}
 
 	public void SetThirdPerson() {
-		isThirdPerson = true;
+		_isThirdPerson = true;
 		protoGuyHead.SetActive(true);
 		protoGuyBody.SetActive(true);
-		foreach(GameObject g in bodyParts) {
-			g.SetActive(false);
-		}
-	}
 
-	public bool IsThirdPerson() {
-		return isThirdPerson;
+		foreach(GameObject g in bodyParts) g.SetActive(false);
 	}
-
-    public string GetLog2Dump() {
-        if (jointsLog.Count > 0){
-            string log = (string)jointsLog[0];
-            jointsLog.RemoveAt(0);
-            return log;
-        }
-        else return null;
-    }
 }

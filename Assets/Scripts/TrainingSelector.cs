@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.IO;
+using System;
 
 public class TrainingSelector : getReal3D.MonoBehaviourWithRpc {
 

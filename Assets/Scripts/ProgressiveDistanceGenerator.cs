@@ -21,7 +21,6 @@ public class ProgressiveDistanceGenerator : ObjectsManager {
 	}
 	
 	protected override Vector3 PositionNewObject() {
-		Debug.Log("here");
 		Vector3 newPosition = new Vector3();
 		float z = SessionManager.GetInstance ().GetPatientPosition ().z + 0.1f;
 		switch (direction) {

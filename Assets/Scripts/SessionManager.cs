@@ -6,6 +6,7 @@ using System.Collections;
 using System;
 using System.IO;
 using SimpleJSON;
+using System.Text;
 
 public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
@@ -35,7 +36,6 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	private ObjectsManager manager;
 
 	protected bool isTimerStopped = true;
-
 	private bool trajectoryFeedback = false;
 	private bool isDistortedMode = false;
 
@@ -44,7 +44,17 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	delegate void ConfirmDelegate();
 	private ConfirmDelegate currentDelegate;
 
-	private void ConfirmMethod(string message, ConfirmDelegate del) {
+    private string _trainingMode;       // specifies if the training is being done in Normal/Trajectory/Distorted mode
+    private string _perspective;        // specifies if the user is in first/third person perspective
+    private int _status;                 // status of the exercise based on the ExerciseStatus Enum
+    private FlatAvatarController avatarController;
+
+    // Getters
+    public string GetTrainingMode() { return _trainingMode; }
+    public string GetPerspective()  { return _perspective; }
+    public int GetStatus() { return _status; }
+
+    private void ConfirmMethod(string message, ConfirmDelegate del) {
 		ToggleMenus(confirmPanel);
 
 		//confirmPanel.SetActive(true);
@@ -84,9 +94,10 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		patient = GameObject.FindGameObjectWithTag("Patient");
 		patientHips = GameObject.FindGameObjectWithTag("Hips");
 		audio = GetComponent<AudioSource>();
+        avatarController = patient.GetComponent<FlatAvatarController>();
 
-		//CreateObjectManager();
-		if(PlayerPrefs.HasKey("TrainingModeId")) {
+        //CreateObjectManager();
+        if (PlayerPrefs.HasKey("TrainingModeId")) {
 			StartNewTraining(PlayerPrefs.GetInt("TrainingModeId"));
 		}
 
@@ -108,7 +119,11 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			PlayAudio("Countdown");
 			yield return new WaitForSeconds(1f);
 		}
-		CreateFirstObject();
+
+        _status = (int) ExerciseStatus.Running;
+        //StartCoroutine(LogPositionsCoroutine());
+
+        CreateFirstObject();
 		PlayAudio ("Start");
 		DisplayText ("Session started!!");
 		yield return new WaitForSeconds(2f);
@@ -135,7 +150,6 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	public void CreateObjectManager() {
-		Debug.Log ("object manager " + PlayerPrefs.GetInt("TrainingModeId"));
 		if(manager != null) {
 			manager.CancelSession();
 			StopTimer();
@@ -189,7 +203,12 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		labelMode.text = modeName;
 		CreateObjectManager();
 		DisplayText("Please walk into the red circle");
-	}
+
+        // set the training mode and perspective to defaults
+        _trainingMode = "N";
+        _perspective = "3";
+        _status = (int) ExerciseStatus.Preparing;
+    }
 
 	public void CreateFirstObject() {
 		manager.NextObject ();
@@ -341,15 +360,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	public void EndSession() {
 		labelRight.text = "";
 		labelLeft.text = "";
-//		DisplayText ("!! Training Complete !!");
-//		DisplayText("Number of objects caught: " + manager.GetNumberOfObjectsCaught () );
-//		DisplayText("Number of objects caught: " + manager.GetNumberOfObjectsCaught () );
 		StartCoroutine(EndSessionCoroutine());
 		PlayerPrefs.SetFloat ("TotalTime", elapsedTime);
-		if (getReal3D.Cluster.isMaster) {
-			string filePath = FinalizeLogFile ();
-			//SendMail(filePath);
-		}
 	}
 
 	public IEnumerator EndSessionCoroutine() {
@@ -358,8 +370,9 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		GameObject vfx = (GameObject) GameObject.Instantiate (sessionCompleteAnimation, patientHips.transform.position, Quaternion.identity);
 		yield return new WaitForSeconds (2f);
 		if (getReal3D.Cluster.isMaster) {
-			Debug.Log ("sono la courutine e chiamo manager.GetNumberOfObjectsCaught(): " +  manager.GetNumberOfObjectsCaught());
-			getReal3D.RpcManager.call("DisplayTrainingSummary", manager.GetNumberOfObjectsCaught(), manager.GetTotalElapsedTime());
+            _status = (int)ExerciseStatus.Finished;
+            getReal3D.RpcManager.call("DisplayTrainingSummary", manager.GetNumberOfObjectsCaught(), manager.GetTotalElapsedTime());
+            LogWriter.instance.WriteLogs(manager, avatarController.jointsLog);
 		}
 	}
 
@@ -498,8 +511,10 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
 		if(script.IsThirdPerson()) {
 			FirstPersonMode();
+            _perspective = "1";
 		} else {
 			ThirdPersonMode();
+            _perspective = "3";
 		}
 
 	}
@@ -518,11 +533,13 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		if(script.isDistortedReality) {
 			script.isDistortedReality = false;
 			isDistortedMode = false;
+            _trainingMode = "N";
 		//	ToggleCameraEffect();
 		}
 		else {
 			script.isDistortedReality = true;
 			isDistortedMode = true;
+            _trainingMode = "D";
 		//	ToggleCameraEffect();
 		}
 		PlayAudio("Start");
@@ -552,7 +569,6 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	private void ToggleMenus (GameObject menu) {
-		Debug.Log (menu);
 		if(menu.GetComponent<ScrollableMenu>()) {
 			menu.GetComponent<ScrollableMenu>().SetActivationTime(Time.time);
 		}
@@ -596,7 +612,6 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	private void SendMail(string filePath) {
-		Debug.Log ("sending email");
 		MailMessage mail = new MailMessage("rehabilitation-avatar@mail.com", "mastercava@hotmail.it");
 		SmtpClient client = new SmtpClient();
 		Attachment attachment = new Attachment(filePath);
@@ -609,25 +624,6 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		mail.Subject = "New training log for patient " + PlayerPrefs.GetString("PatientId");
 		mail.Body = "The training log file is attached to this email.";
 		client.Send(mail);
-	}
-
-	private string FinalizeLogFile() {
-
-		outputData["elapsedTime"].AsFloat = manager.GetTotalElapsedTime();
-		outputData ["numberOfObjects"].AsInt = manager.GetNumberOfObjects ();
-		outputData ["objects"] = manager.GetObjectsData ();
-		outputData["positions"] = patient.GetComponent<FlatAvatarController>().GetPositionsLog();
-		string filePath = "C:\\Users\\evldemo\\Desktop\\Rehabilitation Log\\" + (PlayerPrefs.GetString("PatientId").Replace(" ", "")) + "_" + (PlayerPrefs.GetString("TrainingMode").Replace(" ", "")) + "_" + GetTimestamp(DateTime.Now) + ".txt";
-		using (StreamWriter sw = new StreamWriter(filePath)) {
-			sw.Write(outputData.ToString());
-			sw.Close();
-		}
-		Debug.Log(outputData.ToString());
-		return filePath;
-	}
-
-	private String GetTimestamp(DateTime value) {
-		return value.ToString("yyyyMMddHHmmssffff");
 	}
 	
 	void Update() {
@@ -652,7 +648,6 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	public void closeHelpPanel() {
-		Debug.Log("close help panel");
 		helpPanel.SetActive(false);
 	}
 
@@ -681,9 +676,24 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		return leftHand;
 	}
 
-	public void ToggleMotionTrail() {
+    public string GetNearestHandName(Vector3 pos)
+    {
+        FlatAvatarController controller = patient.GetComponent<FlatAvatarController>();
+        Vector3 leftHand = controller.leftHand.transform.position;
+        Vector3 rightHand = controller.rightHand.transform.position;
+        if (Vector3.Distance(leftHand, pos) > Vector3.Distance(rightHand, pos))
+        {
+            return "right_hand";
+        }
+        return "left_hand";
+    }
+
+    public void ToggleMotionTrail() {
 		trajectoryFeedback = !trajectoryFeedback;
-		FlatAvatarController controller = patient.GetComponent<FlatAvatarController>();
+        if (trajectoryFeedback) _trainingMode = "T";
+        else _trainingMode = "N";
+
+        FlatAvatarController controller = patient.GetComponent<FlatAvatarController>();
 		TrailRenderer left = controller.leftHand.GetComponent<TrailRenderer>();
 		TrailRenderer right = controller.rightHand.GetComponent<TrailRenderer>();
 		left.enabled = trajectoryFeedback;
@@ -709,5 +719,22 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	public void PatientInPosition() {
 		patientInsideCircle = true;
 	}
+
+    IEnumerator LogPositionsCoroutine() {
+        yield return null;
+        Debug.Log("Starting positions coroutine");
+        string filePath = Path.Combine(LogWriter.instance.GetDirectory(), "positions.txt");
+        StreamWriter sw = File.AppendText(filePath);
+
+        while (_status == (int)ExerciseStatus.Running) {
+            string log = avatarController.GetLog2Dump();
+            if (log != null) sw.WriteLine(log);
+           
+            yield return new WaitForSeconds(1f / 10);
+        };
+
+        sw.Close();
+        yield return null;
+    }
 
 }

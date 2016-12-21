@@ -20,6 +20,8 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 	protected Object objectPrefab;
 	protected GameObject directionArrow;
 
+    private Vector3 _newObjectPosition;
+
 	protected void Start() {
 		objectPrefab = Resources.Load ("BasicObject");
 
@@ -40,10 +42,10 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 			return;
 		}
 		if (getReal3D.Cluster.isMaster) {
-			Vector3 newPosition = PositionNewObject();
+            _newObjectPosition = PositionNewObject();
 			Quaternion newQuaternion = Quaternion.Euler (UnityEngine.Random.Range (0f, 360f), UnityEngine.Random.Range (0.0f, 360f), UnityEngine.Random.Range (0.0f, 360f));
 
-			MakeRPCCall(newPosition, newQuaternion);
+			MakeRPCCall(_newObjectPosition, newQuaternion);
 		}
 	}
 
@@ -69,7 +71,6 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	public int GetNumberOfObjectsCaught () {
-		Debug.Log ("Sono get number of objects caught e ritorno: " + objectsCaught);
 		return objectsCaught;
 	}
 
@@ -80,26 +81,50 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 
 	public void ObjectCaught(float caughtTime) {
 		if (getReal3D.Cluster.isMaster) {
-			JSONNode obj = new JSONClass ();
-			obj ["id"].AsInt = currentObject;
-			obj ["time"].AsFloat = caughtTime - appearTime;
-			obj["reached"] = "Yes";
-			objects.Add (obj);
+			JSONNode objectLog = new JSONClass ();
+            objectLog["id"].AsInt = currentObject;
+            objectLog["appear_time"].AsFloat = appearTime;
+            objectLog["caught_time"].AsFloat = caughtTime;
+            objectLog["time"].AsFloat = caughtTime - appearTime;
+            objectLog["reached"] = "Yes";
+            objectLog["mode"] = SessionManager.GetInstance().GetTrainingMode();
+            objectLog["pers"] = SessionManager.GetInstance().GetPerspective();
+
+            // position of new object
+            objectLog["ox"].AsFloat = _newObjectPosition.x;
+            objectLog["oy"].AsFloat = _newObjectPosition.y;
+            objectLog["oz"].AsFloat = _newObjectPosition.z;
+
+            objectLog["hand"] = SessionManager.GetInstance().GetNearestHandName(_newObjectPosition);
+
+            objects.Add (objectLog);
 		}
+
 		SessionManager.GetInstance().RestartTimer();
 		objectsCaught++;
-		Debug.Log ("object caught: " + objectsCaught);
 		NextObject ();
 	}
 
 	public void ObjectNotCaught(float expirationTime) {
 		SessionManager.GetInstance ().StopTimer();
 		if (getReal3D.Cluster.isMaster) {
-			JSONNode obj = new JSONClass ();
-			obj ["id"].AsInt = currentObject;
-			obj ["time"].AsFloat = expirationTime - appearTime;
-			obj["reached"] = "No";
-			objects.Add (obj);
+            JSONNode objectLog = new JSONClass();
+            objectLog["id"].AsInt = currentObject;
+            objectLog["appear_time"].AsFloat = appearTime;
+            objectLog["caught_time"].AsFloat = expirationTime;
+            objectLog["time"].AsFloat = expirationTime - appearTime;
+            objectLog["reached"] = "Yes";
+            objectLog["mode"] = SessionManager.GetInstance().GetTrainingMode();
+            objectLog["pers"] = SessionManager.GetInstance().GetPerspective();
+
+            // position of new object
+            objectLog["ox"].AsFloat = _newObjectPosition.x;
+            objectLog["oy"].AsFloat = _newObjectPosition.y;
+            objectLog["oz"].AsFloat = _newObjectPosition.z;
+
+            objectLog["hand"] = SessionManager.GetInstance().GetNearestHandName(_newObjectPosition);
+
+            objects.Add (objectLog);
 		}
 		SessionManager.GetInstance().RestartTimer();
 		NextObject ();

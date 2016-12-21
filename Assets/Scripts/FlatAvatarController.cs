@@ -8,6 +8,7 @@ public class FlatAvatarController : OmicronEventClient {
 
 	protected float samplingRate = 5f;
 	protected JSONArray positions = new JSONArray();
+    public ArrayList jointsLog = new ArrayList();
 
 	private bool isThirdPerson = true;
 	public bool isPatient = false;
@@ -60,6 +61,7 @@ public class FlatAvatarController : OmicronEventClient {
 	private Vector3 GetJointPosition(EventData e, int jointId) {
 		float[] jointPosition = new float[3];
 		e.getExtraDataVector3(jointId, jointPosition);
+        
 		return new Vector3(jointPosition[0], jointPosition[1], -jointPosition[2]);
 	}
 
@@ -146,11 +148,46 @@ public class FlatAvatarController : OmicronEventClient {
 		lastUpdate = Time.time;
 	}
 
+    private string GetJointName(int jointId) {
+        if (jointId == 7) return "left_elbow";
+        if (jointId == 17) return "right_elbow";
+        if (jointId == 9) return "left_hand";
+        if (jointId == 19) return "right_hand";
+        if (jointId == 6) return "left_shoulder";
+        if (jointId == 16) return "right_shoulder";
+        if (jointId == 11) return "left_hip";
+        if (jointId == 21) return "right_hip";
+        if (jointId == 12) return "left_knee";
+        if (jointId == 22) return "right_knee";
+        if (jointId == 13) return "left_foot";
+        if (jointId == 23) return "right_foot";
+        return jointId.ToString();
+    }
+
+    private void addNewLogPosition(int jointId, Vector3 position, Quaternion rotation) {
+        JSONNode positionLog = new JSONClass();
+
+        positionLog["joint"] = GetJointName(jointId);
+        positionLog["time"].AsFloat = Time.time;
+        positionLog["x"].AsFloat = position.x;
+        positionLog["y"].AsFloat = position.y;
+        positionLog["z"].AsFloat = position.z;
+        positionLog["rx"].AsFloat = rotation.x;
+        positionLog["ry"].AsFloat = rotation.y;
+        positionLog["rz"].AsFloat = rotation.z;
+        positionLog["rw"].AsFloat = rotation.w;
+        //positions.Add(positionLog);
+
+        jointsLog.Add(positionLog.ToString());
+    }
 
 	private void UpdateJointPosition(GameObject joint, EventData e, int jointId, Vector3 optionalOffset = default(Vector3)) {
 		Vector3 newPosition = GetJointPosition(e, jointId);
-		if(!newPosition.Equals(Vector3.zero)) {
+
+        if (!newPosition.Equals(Vector3.zero)) {
 			joint.transform.localPosition = newPosition + new Vector3(0f, isThirdPerson ? yOffset : 0f, isThirdPerson ? zOffset : 0f) + optionalOffset;
+            if (SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Running)
+                addNewLogPosition(jointId, joint.transform.position, joint.transform.rotation);
 		}
 	}
 
@@ -159,7 +196,9 @@ public class FlatAvatarController : OmicronEventClient {
 		newPosition = new Vector3(-newPosition.x, newPosition.y, newPosition.z);
 		if(!newPosition.Equals(Vector3.zero)) {
 			joint.transform.localPosition = newPosition +  new Vector3(0f, isThirdPerson ? yOffset : 0f, isThirdPerson ? zOffset : 0f) + optionalOffset;
-		}
+            if (SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Running)
+                addNewLogPosition(jointId, joint.transform.position, joint.transform.rotation);
+        }
 	}
 
 	private void UpdateHipsPosition(EventData e) {
@@ -271,4 +310,12 @@ public class FlatAvatarController : OmicronEventClient {
 		return isThirdPerson;
 	}
 
+    public string GetLog2Dump() {
+        if (jointsLog.Count > 0){
+            string log = (string)jointsLog[0];
+            jointsLog.RemoveAt(0);
+            return log;
+        }
+        else return null;
+    }
 }

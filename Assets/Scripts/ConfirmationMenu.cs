@@ -34,7 +34,6 @@ public class ConfirmationMenu : ScrollableMenu {
 		} else if(CAVE2Manager.GetButtonDown(1,CAVE2Manager.Button.Button3)){
 			if (lastButtonUpdateTime + antiBouncing < Time.time) {
 				lastButtonUpdateTime = Time.time;
-				Debug.Log(index);
 				if (index == 1) {
 					SessionManager.GetInstance().ExecuteDelegate();
 				} else if (index == 2) {

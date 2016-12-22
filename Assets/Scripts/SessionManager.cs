@@ -8,6 +8,8 @@ using System.IO;
 using SimpleJSON;
 using System.Text;
 
+enum Perspective { First, Third };
+
 public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
 	public GameObject objectPrefab, menuPanel, trainingPanel, camDisplay, helpPanel, confirmPanel, mapPanel;
@@ -50,6 +52,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     private string _perspective;        // specifies if the user is in first/third person perspective
     private int _status;                 // status of the exercise based on the ExerciseStatus Enum
     private FlatAvatarController avatarController;
+
+    public GameObject cameraController;
 
     // Getters
     public string GetTrainingMode() { return _trainingMode; }
@@ -98,6 +102,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		audio = GetComponent<AudioSource>();
         avatarController = patient.GetComponent<FlatAvatarController>();
 
+        ThirdPersonMode();
         //CreateObjectManager();
         if (PlayerPrefs.HasKey("TrainingModeId")) {
 			StartNewTraining(PlayerPrefs.GetInt("TrainingModeId"));
@@ -133,16 +138,20 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	public bool IsThirdPerson() {
+        // Move the camera instead of the avatar
 		FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
 		return script.IsThirdPerson();
+
+        
 	}
 
 	private void ShowRedCircle() {
 		if(redCircle == null) {
 			FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
 			redCircle = (GameObject) GameObject.Instantiate(Resources.Load("RedCircle"));
-			redCircle.transform.position = new Vector3(redCircle.transform.position.x, redCircle.transform.position.y, redCircle.transform.position.z - (script.IsThirdPerson() ? 0f : bodyOffset));
-		}
+			//redCircle.transform.position = new Vector3(redCircle.transform.position.x, redCircle.transform.position.y, redCircle.transform.position.z - (script.IsThirdPerson() ? 0f : bodyOffset));
+            redCircle.transform.position = new Vector3(0, 0, 0);
+        }
 	}
 
 	private void HideRedCircle() {
@@ -522,7 +531,11 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	public void FirstPersonMode() {
-		FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
+        _perspective = "1";
+        //cameraController.transform.position += new Vector3(0, 0, +1.5f);
+
+        
+        FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
 		script.SetFirstPerson();
 		//patientHips.transform.localScale = new Vector3(0f, 0f, 0f);
 		GameObject[] basicObjects = GameObject.FindGameObjectsWithTag("BasicObject");
@@ -552,6 +565,10 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
 
 	public void ThirdPersonMode() {
+        _perspective = "3";
+        cameraController.transform.position = new Vector3(0, 1.2f, -9.1f);
+        cameraController.transform.eulerAngles = new Vector3(10.5f, 0, 0);
+        
 		FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
 		script.SetThirdPerson();
 		GameObject[] basicObjects = GameObject.FindGameObjectsWithTag("BasicObject");
@@ -639,9 +656,21 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		}
 		if(!isTimerStopped) UpdateTime();
 
-        Vector3 rightHand = avatarController.rightHand.transform.position;
-        labelHands.text = "RH: (" + rightHand.x.ToString("0.00") + ", " + rightHand.y.ToString("0.00") + ", " + rightHand.z.ToString("0.00") + ")";
+        StringBuilder sb = new StringBuilder();
+        sb.Append("Shoulders: ").Append(GetFormattedPosition(avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(avatarController.rightShoulder)).AppendLine();
+        sb.Append("Elbows:    ").Append(GetFormattedPosition(avatarController.leftElbow)).Append(" - ").Append(GetFormattedPosition(avatarController.rightElbow)).AppendLine();
+        sb.Append("Hands:     ").Append(GetFormattedPosition(avatarController.leftHand)).Append(" - ").Append(GetFormattedPosition(avatarController.rightHand)).AppendLine();
+        sb.Append("Hips:      ").Append(GetFormattedPosition(avatarController.leftHip)).Append(" - ").Append(GetFormattedPosition(avatarController.rightHip)).AppendLine();
+        sb.Append("Knees:     ").Append(GetFormattedPosition(avatarController.leftKnee)).Append(" - ").Append(GetFormattedPosition(avatarController.rightKnee)).AppendLine();
+        sb.Append("Feet:      ").Append(GetFormattedPosition(avatarController.leftFoot)).Append(" - ").Append(GetFormattedPosition(avatarController.rightFoot)).AppendLine();
+
+        labelHands.text = sb.ToString();
 	}
+
+    private string GetFormattedPosition(GameObject joint){
+        Vector3 position = joint.transform.position;
+        return "(" + position.x.ToString("0.00") + ", " + position.y.ToString("0.00") + ", " + position.z.ToString("0.00") + ") ";
+    }
 
 	public void DisplayText(string text) {
 		textHint.text = text;

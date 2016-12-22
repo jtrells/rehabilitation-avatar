@@ -4,6 +4,8 @@ using omicron;
 using omicronConnector;
 using SimpleJSON;
 
+// Doing now: Remove hardcoded values for third person. Instead, move the camera backwards.
+
 public class FlatAvatarController : OmicronEventClient {
 
 	protected float samplingRate = 5f;
@@ -16,7 +18,6 @@ public class FlatAvatarController : OmicronEventClient {
 	public GameObject protoGuyBody, protoGuyHead;
 	public GameObject[] bodyParts;
 
-	public float yOffset = 0.6f, zOffset = 2.5f;
 	private float lastUpdate, timeout = 0.1f;
 	public int bodyId = -1;
 
@@ -42,8 +43,7 @@ public class FlatAvatarController : OmicronEventClient {
 
         // Set an offset on the Y axis as the kinect is above the ground
         // and the kinect's coordinate system is set at the infrared sensor
-        //_offset = new Vector3(0, -kinectManager.transform.position.y, 0);
-        _offset = new Vector3(0, 0, 0);
+        _offset = new Vector3(0, kinectManager.transform.position.y, kinectManager.transform.position.z);
     }
 
 	// Fecth data from the kinect in a Omicron Mocap EventData object. Update the data positions based on the sampling
@@ -86,44 +86,44 @@ public class FlatAvatarController : OmicronEventClient {
 
 		if (!_isDistortedReality) {
 			UpdateHipsPosition (e);
-			UpdateJointPosition (leftElbow, e, 7, _offset);
-			UpdateJointPosition (rightElbow, e, 17, _offset);
+			UpdateJointPosition (leftElbow, e, 7);
+			UpdateJointPosition (rightElbow, e, 17);
 				
-			UpdateJointPosition (leftHand, e, 9, _offset);
-			UpdateJointPosition (rightHand, e, 19, _offset);
+			UpdateJointPosition (leftHand, e, 9);
+			UpdateJointPosition (rightHand, e, 19);
 
-			UpdateJointPosition (leftShoulder, e, 6, _offset);
-            UpdateJointPosition(rightShoulder, e, 16, _offset);
+			UpdateJointPosition (leftShoulder, e, 6);
+            UpdateJointPosition(rightShoulder, e, 16);
 			leftHandState = FetchHandState(e.orw);
 			rightHandState = FetchHandState(e.orx);
 			
-			UpdateJointPosition (leftHip, e, 11, _offset);
-			UpdateJointPosition (rightHip, e, 21, _offset);
+			UpdateJointPosition (leftHip, e, 11);
+			UpdateJointPosition (rightHip, e, 21);
 			
-			UpdateJointPosition (leftKnee, e, 12, _offset);
-			UpdateJointPosition (rightKnee, e, 22, _offset);
+			UpdateJointPosition (leftKnee, e, 12);
+			UpdateJointPosition (rightKnee, e, 22);
 			
-			UpdateJointPosition (leftFoot, e, 13, _offset);
-			UpdateJointPosition (rightFoot, e, 23, _offset);
+			UpdateJointPosition (leftFoot, e, 13);
+			UpdateJointPosition (rightFoot, e, 23);
 		} else {
 			UpdateHipsPositionDistorted(e);
-			UpdateJointPositionDistorted (leftElbow, e, 17,_offset);
-			UpdateJointPositionDistorted (rightElbow, e, 7, _offset);
+			UpdateJointPositionDistorted (leftElbow, e, 17);
+			UpdateJointPositionDistorted (rightElbow, e, 7);
 			
-			UpdateJointPositionDistorted (leftHand, e, 19, _offset);
-			UpdateJointPositionDistorted (rightHand, e, 9, _offset);
+			UpdateJointPositionDistorted (leftHand, e, 19);
+			UpdateJointPositionDistorted (rightHand, e, 9);
 			
-			UpdateJointPositionDistorted (leftShoulder, e, 16, _offset);
-			UpdateJointPositionDistorted (rightShoulder, e, 6, _offset);
+			UpdateJointPositionDistorted (leftShoulder, e, 16);
+			UpdateJointPositionDistorted (rightShoulder, e, 6);
 
-			UpdateJointPositionDistorted (leftHip, e, 21, _offset);
-			UpdateJointPositionDistorted (rightHip, e, 11, _offset);
+			UpdateJointPositionDistorted (leftHip, e, 21);
+			UpdateJointPositionDistorted (rightHip, e, 11);
 			
-			UpdateJointPositionDistorted (leftKnee, e, 22, _offset);
-			UpdateJointPositionDistorted (rightKnee, e, 12, _offset);
+			UpdateJointPositionDistorted (leftKnee, e, 22);
+			UpdateJointPositionDistorted (rightKnee, e, 12);
 			
-			UpdateJointPositionDistorted (leftFoot, e, 23, _offset);
-			UpdateJointPositionDistorted (rightFoot, e, 13, _offset);
+			UpdateJointPositionDistorted (leftFoot, e, 23);
+			UpdateJointPositionDistorted (rightFoot, e, 13);
 		}
 
 		lastUpdate = Time.time;
@@ -162,22 +162,23 @@ public class FlatAvatarController : OmicronEventClient {
     }
 
     // Get new position and update localTransform value
-	private void UpdateJointPosition(GameObject joint, EventData e, int jointId, Vector3 optionalOffset = default(Vector3)) {
+	private void UpdateJointPosition(GameObject joint, EventData e, int jointId) {
 		Vector3 newPosition = GetJointPosition(e, jointId);
         if (_isDistortedReality) newPosition = new Vector3(-newPosition.x, newPosition.y, newPosition.z);
-        UpdateAndLogPosition(joint, jointId, newPosition, optionalOffset);
+        UpdateAndLogPosition(joint, jointId, newPosition);
     }
 
     // Update joint values for distorted mode. The method was divided to avoid a bunch of if statements while sending the jointIds values
-	private void UpdateJointPositionDistorted(GameObject joint, EventData e, int jointId, Vector3 optionalOffset = default(Vector3)) {
+	private void UpdateJointPositionDistorted(GameObject joint, EventData e, int jointId) {
 		Vector3 newPosition = GetJointPosition(e, jointId);
 		newPosition = new Vector3(-newPosition.x, newPosition.y, newPosition.z);
-        UpdateAndLogPosition(joint, jointId, newPosition, optionalOffset);
+        UpdateAndLogPosition(joint, jointId, newPosition);
 	}
 
-    private void UpdateAndLogPosition(GameObject joint, int jointId, Vector3 newPosition, Vector3 offset) {
+    private void UpdateAndLogPosition(GameObject joint, int jointId, Vector3 newPosition) {
         if (!newPosition.Equals(Vector3.zero)){
-            joint.transform.localPosition = newPosition + new Vector3(0f, _isThirdPerson ? yOffset : 0f, _isThirdPerson ? zOffset : 0f) + offset;
+            //joint.transform.localPosition = newPosition + new Vector3(0f, _isThirdPerson ? yOffset : 0f, _isThirdPerson ? zOffset : 0f) + offset;
+            joint.transform.position = newPosition + _offset;
             // Only store information while the user is running an exercise. Avoid pre-settings, pause and finished states
             if (SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Running)
                 addNewLogPosition(jointId, joint.transform.position, joint.transform.rotation);
@@ -187,15 +188,17 @@ public class FlatAvatarController : OmicronEventClient {
 	private void UpdateHipsPosition(EventData e) {
 		Vector3 newPosition = GetJointPosition(e, 0);
 		if(!newPosition.Equals(Vector3.zero)) {
-			hips.transform.localPosition = new Vector3(newPosition.x, newPosition.y, newPosition.z) + new Vector3(0f, yOffset, zOffset) + _offset;
-		}
+			//hips.transform.localPosition = new Vector3(newPosition.x, newPosition.y, newPosition.z) + new Vector3(0f, yOffset, zOffset) + _offset;
+            hips.transform.position = new Vector3(newPosition.x, newPosition.y, newPosition.z) + _offset;
+        }
 	}
 
 	private void UpdateHipsPositionDistorted(EventData e) {
 		Vector3 newPosition = GetJointPosition(e, 0);
 		if(!newPosition.Equals(Vector3.zero)) {
-			hips.transform.localPosition = new Vector3(-newPosition.x, newPosition.y, newPosition.z) + new Vector3(0f, yOffset, zOffset) + _offset;
-		}
+			//hips.transform.localPosition = new Vector3(-newPosition.x, newPosition.y, newPosition.z) + new Vector3(0f, yOffset, zOffset) + _offset;
+            hips.transform.position = new Vector3(-newPosition.x, newPosition.y, newPosition.z)  + _offset;
+        }
 	}
 
 	private void KillAvatar() {

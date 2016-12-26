@@ -1,121 +1,106 @@
 ﻿using UnityEngine;
-using System.Collections;
 using SimpleJSON;
 
 public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 
-	protected int currentObject = 0;
-	protected int numberOfObjects;
-	protected int objectsCaught = 0;
+    protected JSONArray objects = new JSONArray();
+    
+    protected GameObject virtualObject;
+    protected float xAvatarSize = 0.3f;
+    protected GameObject directionArrow;
 
-	protected JSONArray objects = new JSONArray();
-	protected float appearTime;
+    protected float appearTime;                 // time when the object appeared on scene. Set by the descendant classes
+    protected float allowedTime = 10f;          // amount of time allowed to catch an object
+    protected int currentObject = 0;            // Number of current object
+    protected int numberOfObjects;              // Total number of objects in the exercise
+    protected int _objectsCaught = 0;           // Total number of objects caught during the exercise
+    protected Object _objectPrefab;             // Defines the prefab for the virtual objects to create
 
-	protected GameObject virtualObject;
+    private Vector3 _newObjectPosition;         // Position in the scene for a new object
 
-	protected float xAvatarSize = 0.3f;
+    // Getters 
+    public int GetNumberOfObjectsCaught() { return _objectsCaught; }
+    public int GetNumberOfObjects() { return numberOfObjects; }
+    public JSONArray GetObjectsData() { return objects; }
 
-	protected float allowedTime = 10f;
+    void Start() {
+        _objectPrefab = Resources.Load("BasicObject");
+    }
 
-	protected Object objectPrefab;
-	protected GameObject directionArrow;
+    // Track the time to see if the patient did not catch the object on time
+    void Update() {
+        if (currentObject > 0 && virtualObject != null && Time.time > allowedTime + appearTime) {
+            Destroy(virtualObject);
+            ObjectNotCaught(Time.time);
+        }
+    }
 
-    private Vector3 _newObjectPosition;
+    // Create a new object in the rehab exercise if still needed. Otherwise, it end the exercise session
+    public void NextObject() {
+        currentObject++;
+        SessionManager.GetInstance().StartTimer();
+        SessionManager.GetInstance().UpdateCurrentObject(currentObject);
 
-	protected void Start() {
-		objectPrefab = Resources.Load ("BasicObject");
+        // If there was an optimal path suggested displayed, clean it
+        if (directionArrow) ClearTrajectories();
 
-	}
+        // if all the objects have been rendered, wait 1 second and end the session
+        if (currentObject == numberOfObjects + 1) {
+            SessionManager.GetInstance().StopTimer();
+            Invoke("EndSession", 1f);
+            return;
+        }
+        else {
+            if (getReal3D.Cluster.isMaster) {
+                _newObjectPosition = PositionNewObject();
+                MakeRPCCall(_newObjectPosition, Quaternion.identity);
+            }
+        }
+    }
 
-	public void NextObject() {
-		currentObject++;
-		SessionManager.GetInstance ().StartTimer();
-		SessionManager.GetInstance().UpdateCurrentObject(currentObject);
+    virtual protected Vector3 PositionNewObject() { return Vector3.zero; }
+    virtual protected void MakeRPCCall(Vector3 newPosition, Quaternion newQuaternion) { }
+    virtual public void ClearTrajectories() { }
 
-		if(directionArrow) {
-			ClearTrajectories();
-		}
+    protected void CreateOptimalTrajectory(Vector3 newPosition) {
+        if (!(SessionManager.GetInstance().IsTrajectoryEnabled())) return;
 
-		if (currentObject == numberOfObjects+1) {
-			SessionManager.GetInstance ().StopTimer();
-			Invoke("EndSession", 1f);
-			return;
-		}
-		if (getReal3D.Cluster.isMaster) {
-            _newObjectPosition = PositionNewObject();
-			Quaternion newQuaternion = Quaternion.Euler (UnityEngine.Random.Range (0f, 360f), UnityEngine.Random.Range (0.0f, 360f), UnityEngine.Random.Range (0.0f, 360f));
+        Vector3 hand = SessionManager.GetInstance().GetNearestHand(newPosition);
+        directionArrow = (GameObject)GameObject.Instantiate(Resources.Load("Cube"), newPosition, Quaternion.identity);
+        directionArrow.transform.LookAt(hand);
+        directionArrow.transform.localScale = new Vector3(0.005f, 0.005f, Vector3.Distance(newPosition, hand));
+        directionArrow.transform.position = ((hand - newPosition) / 2f) + newPosition;
+    }
 
-			MakeRPCCall(_newObjectPosition, newQuaternion);
-		}
-	}
+    private void EndSession() {
+        if (directionArrow) ClearTrajectories();
+        SessionManager.GetInstance().EndSession();
+    }
 
-	virtual protected Vector3 PositionNewObject () { return Vector3.zero; }
-	virtual protected void MakeRPCCall (Vector3 newPosition, Quaternion newQuaternion) {}
-	virtual public void ClearTrajectories(){}
+    public void ObjectCaught(float caughtTime) {
+        LogObject(caughtTime);
+        SessionManager.GetInstance().RestartTimer();
+        _objectsCaught++;
+        NextObject();
+    }
 
-	protected void CreateOptimalTrajectory(Vector3 newPosition) {
-		if(!(SessionManager.GetInstance ().IsTrajectoryEnabled())) return;
-		Vector3 hand = SessionManager.GetInstance().GetNearestHand(newPosition);
-		directionArrow = (GameObject) GameObject.Instantiate(Resources.Load("Cube"), newPosition, Quaternion.identity);
-		directionArrow.transform.LookAt(hand);
-		directionArrow.transform.localScale = new Vector3(0.005f, 0.005f, Vector3.Distance(newPosition, hand));
-		directionArrow.transform.position = ((hand-newPosition)/2f) + newPosition;
-	}
+    private void ObjectNotCaught(float expirationTime) {
+        SessionManager.GetInstance().StopTimer();
+        LogObject(expirationTime);
+        SessionManager.GetInstance().RestartTimer();
+        NextObject();
+    }
 
-	protected void EndSession() {
-		if(directionArrow) {
-			ClearTrajectories();
-		}
-		SessionManager.GetInstance().EndSession();
-	//	objectsCaught = 0;
-	}
-
-	public int GetNumberOfObjectsCaught () {
-		return objectsCaught;
-	}
-
-	public int GetNumberOfObjects () {
-		return numberOfObjects;
-	}
-
-
-	public void ObjectCaught(float caughtTime) {
-		if (getReal3D.Cluster.isMaster) {
-			JSONNode objectLog = new JSONClass ();
-            objectLog["id"].AsInt = currentObject;
-            objectLog["appear_time"].AsFloat = appearTime;
-            objectLog["caught_time"].AsFloat = caughtTime;
-            objectLog["time"].AsFloat = caughtTime - appearTime;
-            objectLog["reached"] = "Yes";
-            objectLog["mode"] = SessionManager.GetInstance().GetTrainingMode();
-            objectLog["pers"] = SessionManager.GetInstance().GetPerspective();
-
-            // position of new object
-            objectLog["ox"].AsFloat = _newObjectPosition.x;
-            objectLog["oy"].AsFloat = _newObjectPosition.y;
-            objectLog["oz"].AsFloat = _newObjectPosition.z;
-
-            objectLog["hand"] = SessionManager.GetInstance().GetNearestHandName(_newObjectPosition);
-
-            objects.Add (objectLog);
-		}
-
-		SessionManager.GetInstance().RestartTimer();
-		objectsCaught++;
-		NextObject ();
-	}
-
-	public void ObjectNotCaught(float expirationTime) {
-		SessionManager.GetInstance ().StopTimer();
-		if (getReal3D.Cluster.isMaster) {
+    private void LogObject(float time) {
+        if (getReal3D.Cluster.isMaster) {
             JSONNode objectLog = new JSONClass();
             objectLog["id"].AsInt = currentObject;
             objectLog["appear_time"].AsFloat = appearTime;
-            objectLog["caught_time"].AsFloat = expirationTime;
-            objectLog["time"].AsFloat = expirationTime - appearTime;
+            objectLog["caught_time"].AsFloat = time;
+            objectLog["time"].AsFloat = time - appearTime;
             objectLog["reached"] = "Yes";
-            objectLog["mode"] = SessionManager.GetInstance().GetTrainingMode();
-            objectLog["pers"] = SessionManager.GetInstance().GetPerspective();
+            objectLog["mode"].AsInt = SessionManager.GetInstance().GetTrainingMode();
+            objectLog["pers"].AsInt = SessionManager.GetInstance().GetPerspective();
 
             // position of new object
             objectLog["ox"].AsFloat = _newObjectPosition.x;
@@ -124,29 +109,14 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 
             objectLog["hand"] = SessionManager.GetInstance().GetNearestHandName(_newObjectPosition);
 
-            objects.Add (objectLog);
-		}
-		SessionManager.GetInstance().RestartTimer();
-		NextObject ();
-	}
-
-	public JSONArray GetObjectsData() {
-		return objects;
-	}
+            objects.Add(objectLog);
+        }
+    }
 
 	public float GetTotalElapsedTime() {
 		float time = 0f;
-		foreach(JSONNode obj in objects.Childs) {
-			time += obj["time"].AsFloat;
-		}
+		foreach(JSONNode obj in objects.Childs) time += obj["time"].AsFloat;
 		return time;
-	}
-
-	void Update() {
-		if (currentObject > 0 && virtualObject != null && Time.time > allowedTime + appearTime) {
-			Destroy(virtualObject);
-			ObjectNotCaught(Time.time);
-		}
 	}
 
 	public bool isEnded() {
@@ -154,11 +124,9 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	public void CancelSession() {
-		if(directionArrow) {
-			ClearTrajectories();
-		}
+		if(directionArrow) ClearTrajectories();
+		
 		Destroy (virtualObject);
 		Destroy(this);
 	}
-
 }

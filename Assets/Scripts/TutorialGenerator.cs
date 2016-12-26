@@ -18,7 +18,7 @@ public class TutorialGenerator : ObjectsManager {
 	
 	[getReal3D.RPC]
 	private void CreateNewObjectRPC (Vector3 newPosition, Quaternion newQuaternion) {
-		virtualObject = (GameObject) GameObject.Instantiate (objectPrefab, newPosition, newQuaternion);
+		virtualObject = (GameObject) GameObject.Instantiate (_objectPrefab, newPosition, newQuaternion);
 		virtualObject.GetComponent<VirtualObject> ().manager = this;
 		appearTime = Time.time;
 	}

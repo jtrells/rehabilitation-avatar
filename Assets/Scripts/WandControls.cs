@@ -1,26 +1,31 @@
 ﻿using UnityEngine;
-using System.Collections;
 
 public class WandControls : MonoBehaviour {
 
 	protected float lastButtonUpdateTime = 0f;
 	protected float antiBouncing = 0.4f;
 	
-	// Update is called once per frame
 	void Update () {
-		//Distorted reality
-		if(CAVE2Manager.GetButtonDown(1,CAVE2Manager.Button.Button5)){
+		if (CAVE2Manager.GetButtonDown(1,CAVE2Manager.Button.Button5) || Input.GetKeyDown(KeyCode.D) ) {           // Start distorted mode
 			if (lastButtonUpdateTime + antiBouncing < Time.time) {
 				lastButtonUpdateTime = Time.time;
-				//SessionManager.GetInstance().DistortedRealityMode();
-				SessionManager.GetInstance().DistortedRealityMode();
+				SessionManager.GetInstance().EnableDistortedReality();
 			}
-		} else if(CAVE2Manager.GetButtonDown(1,CAVE2Manager.Button.Button7)){
+		} else if(CAVE2Manager.GetButtonDown(1,CAVE2Manager.Button.Button7) || Input.GetKeyDown(KeyCode.F1)) {      // Open help menu
 			if (lastButtonUpdateTime + antiBouncing < Time.time) {
 				lastButtonUpdateTime = Time.time;
 				SessionManager.GetInstance().ToggleHelpPanel();
 			}
-		} else if(CAVE2Manager.GetButtonDown(1,CAVE2Manager.Button.ButtonRight) && !SessionManager.GetInstance().IsConfirmVisible()){
+		} else if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.Button3) || Input.GetKeyDown(KeyCode.KeypadEnter)){    // Open menu
+            if (lastButtonUpdateTime + antiBouncing < Time.time) {
+                lastButtonUpdateTime = Time.time;
+                SessionManager.GetInstance().ToggleMenu();
+            }
+        } else if (Input.GetKeyDown(KeyCode.T)){     // Enable trajectory mode
+            SessionManager.GetInstance().ToogleTrajectoryMode();
+        }
+        else if ((CAVE2Manager.GetButtonDown(1,CAVE2Manager.Button.ButtonRight) || Input.GetKeyDown(KeyCode.P))  // Change user perspective
+                    && !SessionManager.GetInstance().IsConfirmVisible()){
 			if (lastButtonUpdateTime + antiBouncing < Time.time) {
 				lastButtonUpdateTime = Time.time;
 				SessionManager.GetInstance().ChangePerspective();

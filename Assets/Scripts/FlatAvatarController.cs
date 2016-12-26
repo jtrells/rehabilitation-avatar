@@ -32,7 +32,6 @@ public class FlatAvatarController : OmicronEventClient {
 
     private Vector3 _offset;
 
-    public bool IsThirdPerson() { return _isThirdPerson; }
     public bool IsPatient() { return _isPatient; }
     public bool IsDistortedReality() { return _isDistortedReality; }
     public void SetDistortedReality(bool state) { _isDistortedReality = state; }
@@ -61,11 +60,6 @@ public class FlatAvatarController : OmicronEventClient {
         
 		return new Vector3(jointPosition[0], jointPosition[1], -jointPosition[2]);
 	}
-
-    /*
-	private int GetJointNumber(EventData e) {
-		return (int) e.extraDataItems;
-	}*/
 
 	private KinectHandState FetchHandState(float value) {
         if (value == 0) return KinectHandState.Unknown;
@@ -177,7 +171,6 @@ public class FlatAvatarController : OmicronEventClient {
 
     private void UpdateAndLogPosition(GameObject joint, int jointId, Vector3 newPosition) {
         if (!newPosition.Equals(Vector3.zero)){
-            //joint.transform.localPosition = newPosition + new Vector3(0f, _isThirdPerson ? yOffset : 0f, _isThirdPerson ? zOffset : 0f) + offset;
             joint.transform.position = newPosition + _offset;
             // Only store information while the user is running an exercise. Avoid pre-settings, pause and finished states
             if (SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Running)
@@ -188,7 +181,6 @@ public class FlatAvatarController : OmicronEventClient {
 	private void UpdateHipsPosition(EventData e) {
 		Vector3 newPosition = GetJointPosition(e, 0);
 		if(!newPosition.Equals(Vector3.zero)) {
-			//hips.transform.localPosition = new Vector3(newPosition.x, newPosition.y, newPosition.z) + new Vector3(0f, yOffset, zOffset) + _offset;
             hips.transform.position = new Vector3(newPosition.x, newPosition.y, newPosition.z) + _offset;
         }
 	}
@@ -196,7 +188,6 @@ public class FlatAvatarController : OmicronEventClient {
 	private void UpdateHipsPositionDistorted(EventData e) {
 		Vector3 newPosition = GetJointPosition(e, 0);
 		if(!newPosition.Equals(Vector3.zero)) {
-			//hips.transform.localPosition = new Vector3(-newPosition.x, newPosition.y, newPosition.z) + new Vector3(0f, yOffset, zOffset) + _offset;
             hips.transform.position = new Vector3(-newPosition.x, newPosition.y, newPosition.z)  + _offset;
         }
 	}

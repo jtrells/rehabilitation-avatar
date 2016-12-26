@@ -1,18 +1,20 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using System.Net.Mail;
-using UnityStandardAssets.ImageEffects;
 using System.Collections;
 using System;
-using System.IO;
-using SimpleJSON;
 using System.Text;
 
-enum Perspective { First, Third };
-
+// Controller of the rehab session environment
 public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
-	public GameObject objectPrefab, menuPanel, trainingPanel, camDisplay, helpPanel, confirmPanel, mapPanel;
+    private static SessionManager instance;             // Singleton instance
+    private int _trainingType;                          // Random Objects, Progressive
+    private int _trainingMode;                          // specifies if the training is being done in Normal/Trajectory/Distorted mode/Trajectory+Distorted
+    private int _perspective;                           // specifies if the user is in first/third person perspective
+    private int _status;                                // status of the exercise based on the ExerciseStatus Enum
+    private FlatAvatarController _avatarController;     // controls the avatar positioning by gathering the Kinect's values
+
+    public GameObject objectPrefab, menuPanel, trainingPanel, camDisplay, helpPanel, confirmPanel, mapPanel;
 	public Text textHint;
 	public Material litMaterial, normalMaterial;
 	public Text labelLeft, labelRight, labelMode, labelHelp; 
@@ -22,7 +24,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
     public Text labelHands;
 
-	private static SessionManager instance;
+	
 	private float xAvatarSize = 0.3f;
 	private bool patientInsideCircle;
 	private float elapsedTime = 0f;
@@ -40,77 +42,93 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	private ObjectsManager manager;
 
 	protected bool isTimerStopped = true;
-	private bool trajectoryFeedback = false;
-	private bool isDistortedMode = false;
-
-	protected JSONNode outputData;
 
 	delegate void ConfirmDelegate();
 	private ConfirmDelegate currentDelegate;
 
-    private string _trainingMode;       // specifies if the training is being done in Normal/Trajectory/Distorted mode
-    private string _perspective;        // specifies if the user is in first/third person perspective
-    private int _status;                 // status of the exercise based on the ExerciseStatus Enum
-    private FlatAvatarController avatarController;
+
 
     public GameObject cameraController;
 
     // Getters
-    public string GetTrainingMode() { return _trainingMode; }
-    public string GetPerspective()  { return _perspective; }
+    public static SessionManager GetInstance() { return instance; }
+    public int GetTrainingMode() { return _trainingMode; }
+    public int GetPerspective()  { return _perspective; }
     public int GetStatus() { return _status; }
 
-    private void ConfirmMethod(string message, ConfirmDelegate del) {
-		ToggleMenus(confirmPanel);
+    public bool IsTrajectoryEnabled() { return (_trainingMode == (int)TrainingMode.Trajectory || _trainingMode == (int)TrainingMode.DistortedAndTrajectory); }
 
-		//confirmPanel.SetActive(true);
-		currentDelegate = del;
-	}
-
-	public void ExecuteDelegate() {
-		currentDelegate ();
-		CloseMenus ();
-		confirmPanel.SetActive(false);
-	}
-
-	public bool IsConfirmVisible() {
-		return confirmPanel.activeSelf;
-	}
-
-	public void CancelDelegate() {
-		ToggleMenus(confirmPanel);
-	}
-
-	private SessionManager () {}
-
+    // set the singleton SessionManager
 	void Awake () {
-		instance = this;
+        if (instance == null)
+            instance = this;
+        else if (instance != this)
+            Destroy(gameObject);
+        DontDestroyOnLoad(gameObject);
 	}
 
-	public static SessionManager GetInstance () {
-		return instance;
-	}
+    // Use this for initialization
+    void Start() {
+        // find objects on scene
+        patient = GameObject.FindGameObjectWithTag("Patient");
+        patientHips = GameObject.FindGameObjectWithTag("Hips");
+        audio = GetComponent<AudioSource>();
+        _avatarController = patient.GetComponent<FlatAvatarController>();
 
-	public bool IsTrajectoryEnabled() {
-		return trajectoryFeedback;
-	}
+        // start scene in third person perspective
+        SetThirdPersonPerspective();
 
-	// Use this for initialization
-	void Start () {
-		patient = GameObject.FindGameObjectWithTag("Patient");
-		patientHips = GameObject.FindGameObjectWithTag("Hips");
-		audio = GetComponent<AudioSource>();
-        avatarController = patient.GetComponent<FlatAvatarController>();
-
-        ThirdPersonMode();
         //CreateObjectManager();
-        if (PlayerPrefs.HasKey("TrainingModeId")) {
-			StartNewTraining(PlayerPrefs.GetInt("TrainingModeId"));
-		}
+        // If the Main scene was called to start a training, then start the 
+        // training. Otherwise is a calibration scene.
+        if (PlayerPrefs.HasKey("TrainingModeId"))
+            StartNewTraining(PlayerPrefs.GetInt("TrainingModeId"));
+        // TODO
+        // else calibrate scene
+    }
 
-	}
+    // Update the timer, timer text and patient joints log
+    void Update() {
+        if (!isTimerStopped) UpdateTime();
 
-	public bool isTutorialMode () {
+        StringBuilder sb = new StringBuilder();
+        sb.Append("Shoulders: ").Append(GetFormattedPosition(_avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightShoulder)).AppendLine();
+        sb.Append("Elbows:    ").Append(GetFormattedPosition(_avatarController.leftElbow)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightElbow)).AppendLine();
+        sb.Append("Hands:     ").Append(GetFormattedPosition(_avatarController.leftHand)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHand)).AppendLine();
+        sb.Append("Hips:      ").Append(GetFormattedPosition(_avatarController.leftHip)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHip)).AppendLine();
+        sb.Append("Knees:     ").Append(GetFormattedPosition(_avatarController.leftKnee)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightKnee)).AppendLine();
+        sb.Append("Feet:      ").Append(GetFormattedPosition(_avatarController.leftFoot)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightFoot)).AppendLine();
+
+        labelHands.text = sb.ToString();
+    }
+
+    private void ConfirmMethod(string message, ConfirmDelegate del)
+    {
+        ToggleMenus(confirmPanel);
+
+        //confirmPanel.SetActive(true);
+        currentDelegate = del;
+    }
+
+    public void ExecuteDelegate()
+    {
+        currentDelegate();
+        CloseMenus();
+        confirmPanel.SetActive(false);
+    }
+
+    public bool IsConfirmVisible()
+    {
+        return confirmPanel.activeSelf;
+    }
+
+    public void CancelDelegate()
+    {
+        ToggleMenus(confirmPanel);
+    }
+
+
+    public bool isTutorialMode () {
 		return tutorialMode;
 	}
 
@@ -128,7 +146,6 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		}
 
         _status = (int) ExerciseStatus.Running;
-        //StartCoroutine(LogPositionsCoroutine());
 
         CreateFirstObject();
 		PlayAudio ("Start");
@@ -137,19 +154,9 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		DisplayText ("");
 	}
 
-	public bool IsThirdPerson() {
-        // Move the camera instead of the avatar
-		FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
-		return script.IsThirdPerson();
-
-        
-	}
-
 	private void ShowRedCircle() {
 		if(redCircle == null) {
-			FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
 			redCircle = (GameObject) GameObject.Instantiate(Resources.Load("RedCircle"));
-			//redCircle.transform.position = new Vector3(redCircle.transform.position.x, redCircle.transform.position.y, redCircle.transform.position.z - (script.IsThirdPerson() ? 0f : bodyOffset));
             redCircle.transform.position = new Vector3(0, 0, 0);
         }
 	}
@@ -160,7 +167,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		}
 	}
 
-	public void CreateObjectManager() {
+	private void CreateObjectManager() {
 		if(manager != null) {
 			manager.CancelSession();
 			StopTimer();
@@ -191,7 +198,10 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	public void StartNewTraining(int trainingId) {
+        _trainingType = trainingId;
 		PlayerPrefs.SetInt("TrainingModeId", trainingId);
+
+        // if there is no routine manager or the routine has ended
 		if(!manager || manager.isEnded()) {
 			StartNewTrainingConfirmed();
 		}
@@ -200,7 +210,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		}
 	}
 
-	public void StartNewTrainingConfirmed() {
+	private void StartNewTrainingConfirmed() {
 		int trainingId = PlayerPrefs.GetInt("TrainingModeId");
 		string modeName = "";
 		switch(trainingId) {
@@ -216,25 +226,18 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		DisplayText("Please walk into the red circle");
 
         // set the training mode and perspective to defaults
-        _trainingMode = "N";
-        _perspective = "3";
+        _trainingMode = (int) TrainingMode.Normal;
+        _perspective = (int) Perspective.Third;
         _status = (int) ExerciseStatus.Preparing;
     }
 
-	public void CreateFirstObject() {
+	private void CreateFirstObject() {
 		manager.NextObject ();
 		elapsedTime = Time.time;
-		InitializeOutput ();
 	}
 
 
-	public void StopTimer() {
-		isTimerStopped = true;
-	}
 
-	public void StartTimer() {
-		isTimerStopped = false;
-	}
 
 	private void UpdateTime() {
 		labelRight.text = "Time: " + Math.Floor((Time.time-elapsedTime) * 10) / 10 ;
@@ -368,6 +371,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		tutorialMode = false;
 	}
 
+    // Methods for finishing an exercise session --------------------------------------------------------------------------------------------------
 	public void EndSession() {
 		labelRight.text = "";
 		labelLeft.text = "";
@@ -375,7 +379,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		PlayerPrefs.SetFloat ("TotalTime", elapsedTime);
 	}
 
-	public IEnumerator EndSessionCoroutine() {
+    //display visual and sounds effects and write the logs in the exercise log file
+	private IEnumerator EndSessionCoroutine() {
 		DisplayText ("!! Training Complete !!");
 		PlayAudio ("Victory");
 		GameObject vfx = (GameObject) GameObject.Instantiate (sessionCompleteAnimation, patientHips.transform.position, Quaternion.identity);
@@ -383,27 +388,18 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		if (getReal3D.Cluster.isMaster) {
             _status = (int)ExerciseStatus.Finished;
             getReal3D.RpcManager.call("DisplayTrainingSummary", manager.GetNumberOfObjectsCaught(), manager.GetTotalElapsedTime());
-            LogWriter.instance.WriteLogs(manager, avatarController.jointsLog);
+            LogWriter.instance.WriteLogs(manager, _avatarController.jointsLog);
 		}
 	}
+    // End methods for finishing an exercise session ------------------------------------------------------------------------------------------------
 
-	public bool isLastPhaseOfTutorial() {
+    public bool isLastPhaseOfTutorial() {
 		return lastPhaseOfTutorial;
 	}
 
 	[getReal3D.RPC]
 	private void DisplayTrainingSummary(int numberOfObjectsCaught, float time) {
 		DisplayText(/*"Mode: " + PlayerPrefs.GetString("TrainingMode") + */"Objects caught: " + numberOfObjectsCaught + " out of " + manager.GetNumberOfObjects ()+ "\nElapsed time: " + Mathf.Round(time) + "s");
-	}
-
-	public void PlayAudio(string name) {
-		audio.clip = (AudioClip) Resources.Load ("Audio/" + name);
-		audio.Play ();
-	}
-
-	public void PlayVoice(string name) {
-		voice.clip = (AudioClip) Resources.Load ("Audio/" + name);
-		voice.Play ();
 	}
 
 	private void ChangeScene(){
@@ -452,10 +448,10 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			case "STOP": AbortSession(); break;
 			case "EXIT": ConfirmExit(); break;
 			case "MAP": ToggleMap(); break;
-			case "TRAJECTORY": ToggleMotionTrail(); break;
-			case "FIRST PERSON": FirstPersonMode(); break;
-			case "DISTORTED REALITY": DistortedRealityMode(); break;
-			case "THIRD PERSON": ThirdPersonMode(); break;
+			case "TRAJECTORY": ToogleTrajectoryMode(); break;
+			case "FIRST PERSON": SetFirstPersonPerspective(); break;
+			case "DISTORTED REALITY": EnableDistortedReality(); break;
+			case "THIRD PERSON": SetThirdPersonPerspective(); break;
 			case "MODE": case "TRAINING MODE": ShowTrainingModes(); break;
 			case "CLOSE": case "CLOSE MENU": CloseMenus(); break;
 			case "RANDOM OBJECTS": StartNewTraining(2); break;
@@ -500,7 +496,6 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	public void ToggleTrainingMode() {
 		closeHelpPanel();
 		ToggleMenus(trainingPanel);
-
 	}
 
 	public void AbortSession() {
@@ -518,64 +513,74 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		trainingPanel.SetActive(true);
 	}
 
+    // Switch between first and third person perspectives
 	public void ChangePerspective() {
-		FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
-		if(script.IsThirdPerson()) {
-			FirstPersonMode();
-            _perspective = "1";
-		} else {
-			ThirdPersonMode();
-            _perspective = "3";
-		}
-
+        if (_perspective == (int)Perspective.First)
+            SetFirstPersonPerspective();
+        else SetThirdPersonPerspective();
 	}
 
-	public void FirstPersonMode() {
-        _perspective = "1";
-        //cameraController.transform.position += new Vector3(0, 0, +1.5f);
-
-        
-        FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
-		script.SetFirstPerson();
-		//patientHips.transform.localScale = new Vector3(0f, 0f, 0f);
-		GameObject[] basicObjects = GameObject.FindGameObjectsWithTag("BasicObject");
-		foreach(GameObject g in basicObjects) {
-			g.transform.position = new Vector3(g.transform.position.x, g.transform.position.y, g.transform.position.z - bodyOffset);
-		}
-	}
-	public void DistortedRealityMode() {
-		FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
-		if(script.IsDistortedReality()) {
-			script.SetDistortedReality(false);
-			isDistortedMode = false;
-            _trainingMode = "N";
-		//	ToggleCameraEffect();
+    // Enable Distorted Reality Mode
+	public void EnableDistortedReality() {
+		
+		if(_trainingMode == (int)TrainingMode.Distorted || _trainingMode == (int)TrainingMode.DistortedAndTrajectory) {
+			_avatarController.SetDistortedReality(false);
+            if (_trainingMode == (int)TrainingMode.Distorted)
+                _trainingMode = (int)TrainingMode.Normal;
+            else _trainingMode = (int)TrainingMode.Trajectory;
 		}
 		else {
-			script.SetDistortedReality(true);
-			isDistortedMode = true;
-            _trainingMode = "D";
-		//	ToggleCameraEffect();
-		}
+            _avatarController.SetDistortedReality(false);
+            if (_trainingMode == (int)TrainingMode.Normal)
+                _trainingMode = (int)TrainingMode.Distorted;
+            else _trainingMode = (int)TrainingMode.DistortedAndTrajectory;
+        }
+
 		PlayAudio("Start");
 		RegenerateLabelMode();
 	}
 
+    // Enable trajectory mode
+    public void ToogleTrajectoryMode() {
+        bool trajectoryEnabled = false;
+
+        if (_trainingMode == (int)TrainingMode.Normal) {
+            _trainingMode = (int)TrainingMode.Trajectory;
+            trajectoryEnabled = true;
+        }
+        else if (_trainingMode == (int)TrainingMode.Distorted) {
+            _trainingMode = (int)TrainingMode.DistortedAndTrajectory;
+            trajectoryEnabled = true;
+        }
+        else if (_trainingMode == (int)TrainingMode.Distorted)
+            _trainingMode = (int)TrainingMode.Normal;
+        else _trainingMode = (int)TrainingMode.Distorted;
 
 
+        TrailRenderer left = _avatarController.leftHand.GetComponent<TrailRenderer>();
+        TrailRenderer right = _avatarController.rightHand.GetComponent<TrailRenderer>();
+        left.enabled = trajectoryEnabled;
+        right.enabled = trajectoryEnabled;
 
-	public void ThirdPersonMode() {
-        _perspective = "3";
+        PlayAudio("Start");
+        RegenerateLabelMode();
+    }
+
+    private void SetFirstPersonPerspective() {
+        _perspective = (int)Perspective.First;
+
+        // Move the camera to the head position
+        cameraController.transform.position = _avatarController.protoGuyBody.transform.position;
+        _avatarController.SetFirstPerson();
+    }
+
+    private void SetThirdPersonPerspective() {
+        _perspective = (int) Perspective.Third;
+
+        // Positions and rotations calculated manually by moving the camera around during design
         cameraController.transform.position = new Vector3(0, 1.2f, -9.1f);
         cameraController.transform.eulerAngles = new Vector3(10.5f, 0, 0);
-        
-		FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
-		script.SetThirdPerson();
-		GameObject[] basicObjects = GameObject.FindGameObjectsWithTag("BasicObject");
-		foreach(GameObject g in basicObjects) {
-			g.transform.position = new Vector3(g.transform.position.x, g.transform.position.y, g.transform.position.z + bodyOffset);
-		}
-		//patientHips.transform.localScale = new Vector3(1.3f, 1f, 1f);
+        _avatarController.SetThirdPerson();
 	}
 
 	public void ToggleCamDisplay() {
@@ -611,8 +616,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	public Vector3 GetPatientPosition() {
-		FlatAvatarController script = patient.GetComponent<FlatAvatarController>();
-		return patientHips.transform.position - new Vector3(0f, 0f, script.IsThirdPerson() ? 0f : bodyOffset);
+        return patientHips.transform.position;
 	}
 
 	public void RestartTimer() {
@@ -622,49 +626,6 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
 	public bool IsTimerStopped() {
 		return isTimerStopped;
-	}
-
-	protected void InitializeOutput() {
-		outputData = new JSONClass();
-		outputData["patientId"] = PlayerPrefs.GetString("PatientId");
-		outputData["trainingId"] = PlayerPrefs.GetString("TrainingModeId");
-	}
-
-	private void SendMail(string filePath) {
-		MailMessage mail = new MailMessage("rehabilitation-avatar@mail.com", "mastercava@hotmail.it");
-		SmtpClient client = new SmtpClient();
-		Attachment attachment = new Attachment(filePath);
-		mail.Attachments.Add(attachment);
-		client.Port = 587;
-		client.DeliveryMethod = SmtpDeliveryMethod.Network;
-		client.UseDefaultCredentials = false;
-		client.Host = "smtp.mail.com";
-		client.Credentials = (System.Net.ICredentialsByHost) new System.Net.NetworkCredential("rehabilitation-avatar@mail.com", "password" );
-		mail.Subject = "New training log for patient " + PlayerPrefs.GetString("PatientId");
-		mail.Body = "The training log file is attached to this email.";
-		client.Send(mail);
-	}
-	
-	void Update() {
-		if(CAVE2Manager.GetButtonDown(1,CAVE2Manager.Button.Button3)){
-			if (lastButtonUpdateTime + antiBouncing < Time.time) {
-				lastButtonUpdateTime = Time.time;
-				if (!menuPanel.activeSelf && !trainingPanel.activeSelf) {
-					ToggleMenu();
-				}
-			}
-		}
-		if(!isTimerStopped) UpdateTime();
-
-        StringBuilder sb = new StringBuilder();
-        sb.Append("Shoulders: ").Append(GetFormattedPosition(avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(avatarController.rightShoulder)).AppendLine();
-        sb.Append("Elbows:    ").Append(GetFormattedPosition(avatarController.leftElbow)).Append(" - ").Append(GetFormattedPosition(avatarController.rightElbow)).AppendLine();
-        sb.Append("Hands:     ").Append(GetFormattedPosition(avatarController.leftHand)).Append(" - ").Append(GetFormattedPosition(avatarController.rightHand)).AppendLine();
-        sb.Append("Hips:      ").Append(GetFormattedPosition(avatarController.leftHip)).Append(" - ").Append(GetFormattedPosition(avatarController.rightHip)).AppendLine();
-        sb.Append("Knees:     ").Append(GetFormattedPosition(avatarController.leftKnee)).Append(" - ").Append(GetFormattedPosition(avatarController.rightKnee)).AppendLine();
-        sb.Append("Feet:      ").Append(GetFormattedPosition(avatarController.leftFoot)).Append(" - ").Append(GetFormattedPosition(avatarController.rightFoot)).AppendLine();
-
-        labelHands.text = sb.ToString();
 	}
 
     private string GetFormattedPosition(GameObject joint){
@@ -689,17 +650,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		menuPanel.SetActive(false);
 		trainingPanel.SetActive(false);
 	}
-
-/*	private void ToggleCameraEffect() {
-		Grayscale cameraEffect = Camera.main.gameObject.GetComponent<Grayscale>();
-		if(cameraEffect.enabled) {
-			cameraEffect.enabled = false;
-		}
-		else {
-			cameraEffect.enabled = true;
-		}
-	}
-*/
+    
 	public Vector3 GetNearestHand(Vector3 pos) {
 		FlatAvatarController controller = patient.GetComponent<FlatAvatarController>();
 		Vector3 leftHand = controller.leftHand.transform.position;
@@ -722,35 +673,36 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         return "left_hand";
     }
 
-    public void ToggleMotionTrail() {
-		trajectoryFeedback = !trajectoryFeedback;
-        if (trajectoryFeedback) _trainingMode = "T";
-        else _trainingMode = "N";
-
-        FlatAvatarController controller = patient.GetComponent<FlatAvatarController>();
-		TrailRenderer left = controller.leftHand.GetComponent<TrailRenderer>();
-		TrailRenderer right = controller.rightHand.GetComponent<TrailRenderer>();
-		left.enabled = trajectoryFeedback;
-		right.enabled = trajectoryFeedback;
-		PlayAudio("Start");
-		RegenerateLabelMode();
-	}
-
 	private void RegenerateLabelMode() {
 		string text = PlayerPrefs.GetString("TrainingMode") + "\n";
-		if(trajectoryFeedback) {
-			text += "Trajectory";
-		}
-		if(isDistortedMode) {
-			text += (trajectoryFeedback ? " + " : "") + "Distorsion";
-		}
-		if(trajectoryFeedback ^ isDistortedMode) {
-			text += " enabled";
-		}
+		
+        if (_trainingMode == (int)TrainingMode.Distorted)
+            text += " Distorsion enabled";
+        else if (_trainingMode == (int)TrainingMode.DistortedAndTrajectory)
+            text += " Trajectory + Distortion enabled";
 		labelMode.text = text;
 	}
 
 	public void PatientInPosition() {
 		patientInsideCircle = true;
 	}
+
+    private void PlayAudio(string name) {
+        audio.clip = (AudioClip)Resources.Load("Audio/" + name);
+        audio.Play();
+    }
+
+    private void PlayVoice(string name) {
+        voice.clip = (AudioClip)Resources.Load("Audio/" + name);
+        voice.Play();
+    }
+
+    // Methods to control the timer on screen. The timer only runs 
+    // when isTimerStopped is false
+    public void StopTimer() {
+        isTimerStopped = true;
+    }
+    public void StartTimer() {
+        isTimerStopped = false;
+    }
 }

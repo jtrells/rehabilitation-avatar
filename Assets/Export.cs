@@ -4,6 +4,7 @@ using System.IO;
 using System;
 using SimpleJSON;
 
+// Dummy temporal class for testing
 public class Export : MonoBehaviour {
 
 

@@ -20,6 +20,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	public Text labelLeft, labelRight, labelMode, labelHelp; 
 	public GameObject sessionCompleteAnimation;
 	public AudioSource voice;
+    public GameObject firstPersonTransform;
+
 	private bool tutorialMode = false, lastPhaseOfTutorial = false;
 
     public Text labelHands;
@@ -90,8 +92,15 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     // Update the timer, timer text and patient joints log
     void Update() {
         if (!isTimerStopped) UpdateTime();
+        if (_perspective == (int)Perspective.First) {
+            float bodyX = _avatarController.protoGuyBody.transform.position.x;
+            float bodyZ = _avatarController.protoGuyBody.transform.position.z;
+
+            cameraController.transform.position = new Vector3(bodyX, 0f, bodyZ);
+        }
 
         StringBuilder sb = new StringBuilder();
+        sb.Append("Head: ").Append(GetFormattedPosition(firstPersonTransform)).AppendLine().AppendLine();
         sb.Append("Shoulders: ").Append(GetFormattedPosition(_avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightShoulder)).AppendLine();
         sb.Append("Elbows:    ").Append(GetFormattedPosition(_avatarController.leftElbow)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightElbow)).AppendLine();
         sb.Append("Hands:     ").Append(GetFormattedPosition(_avatarController.leftHand)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHand)).AppendLine();
@@ -490,11 +499,13 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
 	public void ToggleMenu() {
 		closeHelpPanel();
-		ToggleMenus(menuPanel);
+        if (trainingPanel.activeSelf) ToggleMenus(trainingPanel);
+        ToggleMenus(menuPanel);
 	}
 
 	public void ToggleTrainingMode() {
 		closeHelpPanel();
+        if (menuPanel.activeSelf) ToggleMenus(menuPanel);
 		ToggleMenus(trainingPanel);
 	}
 
@@ -515,7 +526,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
     // Switch between first and third person perspectives
 	public void ChangePerspective() {
-        if (_perspective == (int)Perspective.First)
+        Debug.Log("Current Perspective: " + _perspective);
+        if (_perspective == (int)Perspective.Third)
             SetFirstPersonPerspective();
         else SetThirdPersonPerspective();
 	}
@@ -570,7 +582,10 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         _perspective = (int)Perspective.First;
 
         // Move the camera to the head position
-        cameraController.transform.position = _avatarController.protoGuyBody.transform.position;
+        float bodyX = _avatarController.protoGuyBody.transform.position.x;
+        float bodyZ = _avatarController.protoGuyBody.transform.position.z;
+
+        cameraController.transform.position = new Vector3(bodyX, 0f, bodyZ);
         _avatarController.SetFirstPerson();
     }
 
@@ -593,9 +608,9 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
 	private void ToggleMenus (GameObject menu) {
-		if(menu.GetComponent<ScrollableMenu>()) {
+		if(menu.GetComponent<ScrollableMenu>())
 			menu.GetComponent<ScrollableMenu>().SetActivationTime(Time.time);
-		}
+	
 		if(menu.activeSelf) {
 			PlayAudio ("Cancel");
 			menu.SetActive(false);

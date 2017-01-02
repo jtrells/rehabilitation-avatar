@@ -28,6 +28,7 @@ public class WandControls : MonoBehaviour {
                     && !SessionManager.GetInstance().IsConfirmVisible()){
 			if (lastButtonUpdateTime + antiBouncing < Time.time) {
 				lastButtonUpdateTime = Time.time;
+                Debug.Log("Changing Perspective");
 				SessionManager.GetInstance().ChangePerspective();
 			}
 		}

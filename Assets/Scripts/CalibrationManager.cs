@@ -2,7 +2,8 @@
 using System.Xml;
 using System.IO;
 
-public class CalibrationManager : MonoBehaviour {
+public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
+{
 
     private static CalibrationManager instance;
 
@@ -40,19 +41,28 @@ public class CalibrationManager : MonoBehaviour {
 
             Debug.Log("Path: " + Application.dataPath);
             Debug.Log("Kinect position: " + _configuration.kinect_y + " ," + _configuration.kinect_z);
-            kinect.transform.position = new Vector3(0, kinectY, kinectZ);
+
+            getReal3D.RpcManager.call("SetKinectPosition", _configuration.kinect_y, _configuration.kinect_z);
         }
     }
 
+    [getReal3D.RPC]
+    public void SetKinectPosition(float y, float z) {
+        kinect.transform.position = new Vector3(0, y, z);
+    }
+
+
     public void Save() {
-        XmlDocument doc = new XmlDocument();
-        doc.Load(Path.Combine(_directoryPath, "rehab-config.xml"));
+        if (getReal3D.Cluster.isMaster) {
+            XmlDocument doc = new XmlDocument();
+            doc.Load(Path.Combine(_directoryPath, "rehab-config.xml"));
 
-        XmlNode node = doc.SelectSingleNode("config");
-        node.SelectSingleNode("kinect_y").InnerText = _configuration.kinect_y.ToString();
-        node.SelectSingleNode("kinect_z").InnerText = _configuration.kinect_z.ToString();
+            XmlNode node = doc.SelectSingleNode("config");
+            node.SelectSingleNode("kinect_y").InnerText = _configuration.kinect_y.ToString();
+            node.SelectSingleNode("kinect_z").InnerText = _configuration.kinect_z.ToString();
 
-        doc.Save(Path.Combine(_directoryPath, "rehab-config.xml"));
+            doc.Save(Path.Combine(_directoryPath, "rehab-config.xml"));
+        }
     }
 
     public void MoveKinectY(float offset) {

@@ -57,6 +57,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     public int GetTrainingMode() { return _trainingMode; }
     public int GetPerspective()  { return _perspective; }
     public int GetStatus() { return _status; }
+    public FlatAvatarController GetAvatarController() { return _avatarController; } 
 
     public bool IsTrajectoryEnabled() { return (_trainingMode == (int)TrainingMode.Trajectory || _trainingMode == (int)TrainingMode.DistortedAndTrajectory); }
 
@@ -93,8 +94,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     void Update() {
         if (!isTimerStopped) UpdateTime();
         if (_perspective == (int)Perspective.First) {
-            float bodyX = _avatarController.protoGuyBody.transform.position.x;
-            float bodyZ = _avatarController.protoGuyBody.transform.position.z;
+            float bodyX = patientHips.transform.position.x;
+            float bodyZ = patientHips.transform.position.z;
 
             cameraController.transform.position = new Vector3(bodyX, 0f, bodyZ);
         }
@@ -542,7 +543,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
             else _trainingMode = (int)TrainingMode.Trajectory;
 		}
 		else {
-            _avatarController.SetDistortedReality(false);
+            _avatarController.SetDistortedReality(true);
             if (_trainingMode == (int)TrainingMode.Normal)
                 _trainingMode = (int)TrainingMode.Distorted;
             else _trainingMode = (int)TrainingMode.DistortedAndTrajectory;
@@ -564,7 +565,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
             _trainingMode = (int)TrainingMode.DistortedAndTrajectory;
             trajectoryEnabled = true;
         }
-        else if (_trainingMode == (int)TrainingMode.Distorted)
+        else if (_trainingMode == (int)TrainingMode.Trajectory)
             _trainingMode = (int)TrainingMode.Normal;
         else _trainingMode = (int)TrainingMode.Distorted;
 
@@ -582,8 +583,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         _perspective = (int)Perspective.First;
 
         // Move the camera to the head position
-        float bodyX = _avatarController.protoGuyBody.transform.position.x;
-        float bodyZ = _avatarController.protoGuyBody.transform.position.z;
+        float bodyX = patientHips.transform.position.x;
+        float bodyZ = patientHips.transform.position.z;
 
         cameraController.transform.position = new Vector3(bodyX, 0f, bodyZ);
         _avatarController.SetFirstPerson();
@@ -695,7 +696,9 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
             text += " Distorsion enabled";
         else if (_trainingMode == (int)TrainingMode.DistortedAndTrajectory)
             text += " Trajectory + Distortion enabled";
-		labelMode.text = text;
+        else if (_trainingMode == (int)TrainingMode.Trajectory)
+            text += " Trajectory enabled";
+        labelMode.text = text;
 	}
 
 	public void PatientInPosition() {

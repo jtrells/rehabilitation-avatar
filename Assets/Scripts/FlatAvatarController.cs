@@ -35,6 +35,7 @@ public class FlatAvatarController : OmicronEventClient {
     public bool IsPatient() { return _isPatient; }
     public bool IsDistortedReality() { return _isDistortedReality; }
     public void SetDistortedReality(bool state) { _isDistortedReality = state; }
+    public void UpdateOffset() { _offset = new Vector3(0, kinectManager.transform.position.y, kinectManager.transform.position.z); }
 
 	void Start() {
 		OmicronManager omicronManager = GameObject.FindGameObjectWithTag("OmicronManager").GetComponent<OmicronManager>();

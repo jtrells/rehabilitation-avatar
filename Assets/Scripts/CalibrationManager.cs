@@ -23,22 +23,25 @@ public class CalibrationManager : MonoBehaviour {
     }
 
     void Start () {
-        _directoryPath = Path.Combine(Directory.GetParent(Application.dataPath).ToString(), "Config").ToString();
+        if (getReal3D.Cluster.isMaster)
+        {
+            _directoryPath = Path.Combine(Application.dataPath, "StreamingAssets").ToString();
 
-        XmlDocument doc = new XmlDocument();
-        doc.Load(Path.Combine(_directoryPath, "rehab-config.xml"));
+            XmlDocument doc = new XmlDocument();
+            doc.Load(Path.Combine(_directoryPath, "rehab-config.xml"));
 
-        XmlNode node = doc.SelectSingleNode("config");
-        float kinectY = float.Parse(node.SelectSingleNode("kinect_y").InnerText);
-        float kinectZ = float.Parse(node.SelectSingleNode("kinect_z").InnerText);
+            XmlNode node = doc.SelectSingleNode("config");
+            float kinectY = float.Parse(node.SelectSingleNode("kinect_y").InnerText);
+            float kinectZ = float.Parse(node.SelectSingleNode("kinect_z").InnerText);
 
-        _configuration = new Config();
-        _configuration.kinect_y = kinectY;
-        _configuration.kinect_z = kinectZ;
+            _configuration = new Config();
+            _configuration.kinect_y = kinectY;
+            _configuration.kinect_z = kinectZ;
 
-        Debug.Log("Path: " + Application.dataPath);
-        Debug.Log("Kinect position: " + _configuration.kinect_y + " ," + _configuration.kinect_z);
-        kinect.transform.position = new Vector3(0, kinectY, kinectZ);
+            Debug.Log("Path: " + Application.dataPath);
+            Debug.Log("Kinect position: " + _configuration.kinect_y + " ," + _configuration.kinect_z);
+            kinect.transform.position = new Vector3(0, kinectY, kinectZ);
+        }
     }
 
     public void Save() {
@@ -55,5 +58,6 @@ public class CalibrationManager : MonoBehaviour {
     public void MoveKinectY(float offset) {
         kinect.transform.position += new Vector3(0, offset, 0);
         SessionManager.GetInstance().GetAvatarController().UpdateOffset();
+        _configuration.kinect_y = kinect.transform.position.y;
     }
 }

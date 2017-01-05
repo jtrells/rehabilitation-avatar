@@ -46,5 +46,9 @@ public class WandControls : MonoBehaviour {
                 CalibrationManager.GetInstance().MoveKinectY(-0.01f);
             }
         }
+        else if ((Input.GetKeyDown(KeyCode.K)))
+        {
+            CalibrationManager.GetInstance().Save();
+        }
     }
 }

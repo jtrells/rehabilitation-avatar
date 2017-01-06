@@ -61,6 +61,7 @@ public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
             node.SelectSingleNode("kinect_y").InnerText = _configuration.kinect_y.ToString();
             node.SelectSingleNode("kinect_z").InnerText = _configuration.kinect_z.ToString();
 
+            Debug.Log("Path: " + _directoryPath);
             doc.Save(Path.Combine(_directoryPath, "rehab-config.xml"));
         }
     }

@@ -27,7 +27,9 @@ public class LogWriter : MonoBehaviour {
         // Do not destroy log writer when reloading the scene
         DontDestroyOnLoad(gameObject);
 
-        CreateNewPatientLog(PlayerPrefs.GetString("PatientId").Replace(" ", ""));
+        if (getReal3D.Cluster.isMaster) {
+            CreateNewPatientLog(PlayerPrefs.GetString("PatientId").Replace(" ", ""));
+        }
     }
 
     void Start() {
@@ -39,6 +41,7 @@ public class LogWriter : MonoBehaviour {
         _directoryPath = patientId + "-" + localData;
         _directoryPath = Path.Combine("Logs",_directoryPath);
 
+        Debug.Log("Create new log folder: " + _directoryPath);
         // create a directory to store all the logs produced in a session
         Directory.CreateDirectory(_directoryPath);
     }

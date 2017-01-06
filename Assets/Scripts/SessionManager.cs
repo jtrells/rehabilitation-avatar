@@ -13,6 +13,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     private int _perspective;                           // specifies if the user is in first/third person perspective
     private int _status;                                // status of the exercise based on the ExerciseStatus Enum
     private FlatAvatarController _avatarController;     // controls the avatar positioning by gathering the Kinect's values
+    private CAVE2Manager cave2Manager;
 
     public GameObject objectPrefab, menuPanel, trainingPanel, camDisplay, helpPanel, confirmPanel, mapPanel;
 	public Text textHint;
@@ -94,10 +95,13 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     void Update() {
         if (!isTimerStopped) UpdateTime();
         if (_perspective == (int)Perspective.First) {
+            cameraController.transform.position = cave2Manager.getHead(1).position;
+            cameraController.transform.rotation = cave2Manager.getHead(1).rotation;
+
+            /* for desktop
             float bodyX = patientHips.transform.position.x;
             float bodyZ = patientHips.transform.position.z;
-
-            cameraController.transform.position = new Vector3(bodyX, 0f, bodyZ);
+            cameraController.transform.position = new Vector3(bodyX, 0f, bodyZ);*/
         }
 
         StringBuilder sb = new StringBuilder();
@@ -582,11 +586,17 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     private void SetFirstPersonPerspective() {
         _perspective = (int)Perspective.First;
 
+        if (!cave2Manager) cave2Manager = GameObject.FindGameObjectWithTag("OmicronManager").GetComponent<CAVE2Manager>();
+
         // Move the camera to the head position
         float bodyX = patientHips.transform.position.x;
         float bodyZ = patientHips.transform.position.z;
 
-        cameraController.transform.position = new Vector3(bodyX, 0f, bodyZ);
+        // only for PC
+        //cameraController.transform.position = new Vector3(bodyX, 0f, bodyZ);
+        // for CAVE2
+        cameraController.transform.position = cave2Manager.getHead(1).position;
+        cameraController.transform.rotation = cave2Manager.getHead(1).rotation;
         _avatarController.SetFirstPerson();
     }
 

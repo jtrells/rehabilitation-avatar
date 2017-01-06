@@ -37,8 +37,9 @@ public class SessionMenu : ScrollableMenu {
 			} else if(CAVE2Manager.GetButtonDown(1,CAVE2Manager.Button.Button2)){
 				if (lastButtonUpdateTime + antiBouncing < Time.time) {
 					lastButtonUpdateTime = Time.time;
-					SessionManager.GetInstance().ToggleMenu();
-				}
+                    SessionManager.GetInstance().ToggleMenu();
+                    SessionManager.GetInstance().Resume();
+                }
 			}
 		}
 	}

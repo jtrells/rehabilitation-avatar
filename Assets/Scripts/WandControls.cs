@@ -17,10 +17,11 @@ public class WandControls : MonoBehaviour {
                 SessionManager.GetInstance().ToggleHelpPanel();
                 CalibrationManager.GetInstance().Save();
             }
-        } else if (Input.GetKeyDown(KeyCode.KeypadEnter)) {    // Open menu
+        } else if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.ButtonRight) || Input.GetKeyDown(KeyCode.KeypadEnter)) {    // Open menu
             if (lastButtonUpdateTime + antiBouncing < Time.time) {
                 lastButtonUpdateTime = Time.time;
-                SessionManager.GetInstance().ToggleMenu();
+                if (SessionManager.GetInstance().GetStatus() == (int) ExerciseStatus.Running)
+                    SessionManager.GetInstance().ToggleMenu();
             }
         } else if (Input.GetKeyDown(KeyCode.T)) {     // Enable trajectory mode
             SessionManager.GetInstance().ToogleTrajectoryMode();

@@ -1,7 +1,8 @@
 ﻿enum ExerciseStatus {
     Preparing = 0,
     Running = 1,
-    Finished = 2
+    Finished = 2,
+    Pause = 3
 }
 
 enum Perspective {

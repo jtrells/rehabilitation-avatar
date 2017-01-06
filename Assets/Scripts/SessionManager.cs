@@ -107,6 +107,16 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         labelHands.text = sb.ToString();
     }
 
+    public void Pause() {
+        isTimerStopped = true;
+        _status = (int) ExerciseStatus.Pause;
+    }
+
+    public void Resume() {
+        isTimerStopped = false;
+        _status = (int)ExerciseStatus.Running;
+    }
+
     private void ConfirmMethod(string message, ConfirmDelegate del)
     {
         ToggleMenus(confirmPanel);
@@ -580,6 +590,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         // for CAVE2, set the cameraController position at 0,0,0 and the Omicron script will update the head position
         cameraController.transform.position = new Vector3(0, 0, 0);
         cameraController.transform.rotation = Quaternion.identity;
+
         _avatarController.SetFirstPerson();
     }
 

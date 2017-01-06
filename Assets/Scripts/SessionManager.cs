@@ -94,16 +94,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     // Update the timer, timer text and patient joints log
     void Update() {
         if (!isTimerStopped) UpdateTime();
-        if (_perspective == (int)Perspective.First) {
-            cameraController.transform.position = cave2Manager.getHead(1).position;
-            cameraController.transform.rotation = cave2Manager.getHead(1).rotation;
-
-            /* for desktop
-            float bodyX = patientHips.transform.position.x;
-            float bodyZ = patientHips.transform.position.z;
-            cameraController.transform.position = new Vector3(bodyX, 0f, bodyZ);*/
-        }
-
+        
         StringBuilder sb = new StringBuilder();
         sb.Append("Head: ").Append(GetFormattedPosition(firstPersonTransform)).AppendLine().AppendLine();
         sb.Append("Shoulders: ").Append(GetFormattedPosition(_avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightShoulder)).AppendLine();
@@ -586,17 +577,9 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     private void SetFirstPersonPerspective() {
         _perspective = (int)Perspective.First;
 
-        if (!cave2Manager) cave2Manager = GameObject.FindGameObjectWithTag("OmicronManager").GetComponent<CAVE2Manager>();
-
-        // Move the camera to the head position
-        float bodyX = patientHips.transform.position.x;
-        float bodyZ = patientHips.transform.position.z;
-
-        // only for PC
-        //cameraController.transform.position = new Vector3(bodyX, 0f, bodyZ);
-        // for CAVE2
-        cameraController.transform.position = cave2Manager.getHead(1).position;
-        cameraController.transform.rotation = cave2Manager.getHead(1).rotation;
+        // for CAVE2, set the cameraController position at 0,0,0 and the Omicron script will update the head position
+        cameraController.transform.position = new Vector3(0, 0, 0);
+        cameraController.transform.rotation = Quaternion.identity;
         _avatarController.SetFirstPerson();
     }
 

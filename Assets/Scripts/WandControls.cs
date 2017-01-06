@@ -17,7 +17,7 @@ public class WandControls : MonoBehaviour {
                 SessionManager.GetInstance().ToggleHelpPanel();
                 CalibrationManager.GetInstance().Save();
             }
-        } else if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.Button3) || Input.GetKeyDown(KeyCode.KeypadEnter)) {    // Open menu
+        } else if (Input.GetKeyDown(KeyCode.KeypadEnter)) {    // Open menu
             if (lastButtonUpdateTime + antiBouncing < Time.time) {
                 lastButtonUpdateTime = Time.time;
                 SessionManager.GetInstance().ToggleMenu();

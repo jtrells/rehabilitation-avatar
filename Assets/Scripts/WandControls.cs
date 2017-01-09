@@ -7,7 +7,7 @@ public class WandControls : MonoBehaviour {
 	
 	void Update () {
         if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.Button7) || Input.GetKeyDown(KeyCode.F1)) {      // L2
-            if (SessionManager.GetInstance().GetStatus() != (int)ExerciseStatus.Calibration)
+            if (SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Calibration)
                 if (ControlBouncing()) CalibrationManager.GetInstance().Save();
             else
                 if (ControlBouncing()) SessionManager.GetInstance().ToggleHelpPanel();
@@ -20,14 +20,14 @@ public class WandControls : MonoBehaviour {
                 if (ControlBouncing()) SessionManager.GetInstance().SwitchTrainingMode(true);
             }
             else
-                SessionManager.GetInstance().SwitchCalibrationAxis(true);
+                if (ControlBouncing()) SessionManager.GetInstance().SwitchCalibrationAxis(true);
         }
         else if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.ButtonLeft)) {
             if (SessionManager.GetInstance().GetStatus() != (int)ExerciseStatus.Calibration) {
                 if (ControlBouncing()) SessionManager.GetInstance().SwitchTrainingMode(false);
             }
             else
-                SessionManager.GetInstance().SwitchCalibrationAxis(false);
+                if (ControlBouncing()) SessionManager.GetInstance().SwitchCalibrationAxis(false);
         }
         else if ((CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.Button5) || Input.GetKeyDown(KeyCode.P))  // L1
                     && !SessionManager.GetInstance().IsConfirmVisible()) {

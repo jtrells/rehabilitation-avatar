@@ -35,7 +35,7 @@ public class FlatAvatarController : OmicronEventClient {
     public bool IsPatient() { return _isPatient; }
     public bool IsDistortedReality() { return _isDistortedReality; }
     public void SetDistortedReality(bool state) { _isDistortedReality = state; }
-    public void UpdateOffset() { _offset = new Vector3(0, kinectManager.transform.position.y, kinectManager.transform.position.z); }
+    public void UpdateOffset() { _offset = kinectManager.transform.position; }
 
 	void Start() {
 		OmicronManager omicronManager = GameObject.FindGameObjectWithTag("OmicronManager").GetComponent<OmicronManager>();
@@ -43,7 +43,7 @@ public class FlatAvatarController : OmicronEventClient {
 
         // Set an offset on the Y axis as the kinect is above the ground
         // and the kinect's coordinate system is set at the infrared sensor
-        _offset = new Vector3(0, kinectManager.transform.position.y, kinectManager.transform.position.z);
+        _offset = kinectManager.transform.position;
     }
 
 	// Fecth data from the kinect in a Omicron Mocap EventData object. Update the data positions based on the sampling

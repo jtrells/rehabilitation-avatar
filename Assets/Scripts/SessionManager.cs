@@ -11,7 +11,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     private int _trainingType;                          // Random Objects, Progressive
     private int _trainingMode;                          // specifies if the training is being done in Normal/Trajectory/Distorted mode/Trajectory+Distorted
     private int _perspective;                           // specifies if the user is in first/third person perspective
-    private int _status;                                // status of the exercise based on the ExerciseStatus Enum
+    private int _status, _oldStatus;                    // status of the exercise based on the ExerciseStatus Enum
     private int _currentCalibrationAxis;                // axis being calibrated: X, Y, Z
     private FlatAvatarController _avatarController;     // controls the avatar positioning by gathering the Kinect's values
     private CAVE2Manager cave2Manager;
@@ -23,6 +23,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	public GameObject sessionCompleteAnimation;
 	public AudioSource voice;
     public GameObject firstPersonTransform;
+    public GameObject kinectOffset;
 
 	private bool tutorialMode = false, lastPhaseOfTutorial = false;
 
@@ -80,24 +81,40 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         patientHips = GameObject.FindGameObjectWithTag("Hips");
         audio = GetComponent<AudioSource>();
         _avatarController = patient.GetComponent<FlatAvatarController>();
+        _currentCalibrationAxis = (int)CalibrationAxis.Y;
+        _status = (int)ExerciseStatus.Preparing;
+        _oldStatus = _status;
 
         // start scene in third person perspective
         SetThirdPersonPerspective();
 
         //CreateObjectManager();
-        // If the Main scene was called to start a training, then start the 
-        // training. Otherwise is a calibration scene.
-        if (PlayerPrefs.HasKey("TrainingModeId"))
-            StartNewTraining(PlayerPrefs.GetInt("TrainingModeId"));
-        // TODO
-        // else calibrate scene
+        // If the Main scene was called to start a training, then start the training
+        if (PlayerPrefs.HasKey("TrainingModeId")) StartNewTraining(PlayerPrefs.GetInt("TrainingModeId"));
     }
 
     // Update the timer, timer text and patient joints log
     void Update() {
         if (!isTimerStopped) UpdateTime();
-        
+
+        string status = "";
+        if (_status == (int)ExerciseStatus.Preparing) status = "Preparing";
+        else if (_status == (int)ExerciseStatus.Running) status = "Running";
+        else if (_status == (int)ExerciseStatus.Pause) status = "Pause";
+        else if (_status == (int)ExerciseStatus.Finished) status = "Finished";
+        else if (_status == (int)ExerciseStatus.Calibration) status = "Calibration";
+        else status = "other";
+
+        string axis = "";
+        if (_currentCalibrationAxis == (int)CalibrationAxis.X) axis = "X";
+        else if (_currentCalibrationAxis == (int)CalibrationAxis.Y) axis = "Y";
+        else if (_currentCalibrationAxis == (int)CalibrationAxis.Z) axis = "Z";
+        else axis = "OTHER";
+
         StringBuilder sb = new StringBuilder();
+        sb.Append("Status: ").Append(status).AppendLine();
+        sb.Append("Calibration Axis: ").Append(axis).AppendLine();
+        sb.Append("Kinect Offset:").Append(GetFormattedPosition(kinectOffset)).AppendLine();
         sb.Append("Head: ").Append(GetFormattedPosition(firstPersonTransform)).AppendLine().AppendLine();
         sb.Append("Shoulders: ").Append(GetFormattedPosition(_avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightShoulder)).AppendLine();
         sb.Append("Elbows:    ").Append(GetFormattedPosition(_avatarController.leftElbow)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightElbow)).AppendLine();
@@ -201,7 +218,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
 	public IEnumerator StartCountdown() {
 		ShowRedCircle();
-		while (!patientInsideCircle) {
+		while (!patientInsideCircle || _status != (int)ExerciseStatus.Preparing) {
 			yield return null;
 		}
 		//HideRedCircle();
@@ -268,43 +285,40 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         _trainingType = trainingId;
 		PlayerPrefs.SetInt("TrainingModeId", trainingId);
 
-        // if there is no routine manager or the routine has ended
-		if(!manager || manager.isEnded()) {
+        // if the exercise routine has not started or it has ended
+        // Otherwise. The call was made from the confirmation popup
+		if(!manager || manager.isEnded())
 			StartNewTrainingConfirmed();
-		}
-		else {
+		else 
 			ConfirmMethod("", StartNewTrainingConfirmed);
-		}
+		
 	}
 
 	private void StartNewTrainingConfirmed() {
 		int trainingId = PlayerPrefs.GetInt("TrainingModeId");
 		string modeName = "";
 		switch(trainingId) {
-		case 1: modeName = "Tutorial"; break;
-		case 2: modeName = "Random Objects"; break;
-		case 3: modeName = "Progressive distance"; break;
-		case 4: modeName = "Custom training"; break;
+		    case 1: modeName = "Tutorial"; break;
+		    case 2: modeName = "Random Objects"; break;
+		    case 3: modeName = "Progressive distance"; break;
+		    case 4: modeName = "Custom training"; break;
 		}
+
 		CheckIfLabelNeeded();
 		PlayerPrefs.SetString("TrainingMode", modeName);
 		labelMode.text = modeName;
+
 		CreateObjectManager();
 		DisplayText("Please walk into the red circle");
 
         // set the training mode and perspective to defaults
         _trainingMode = (int) TrainingMode.Normal;
-        _perspective = (int) Perspective.Third;
-        _status = (int) ExerciseStatus.Preparing;
     }
 
 	private void CreateFirstObject() {
 		manager.NextObject ();
 		elapsedTime = Time.time;
 	}
-
-
-
 
 	private void UpdateTime() {
 		labelRight.text = "Time: " + Math.Floor((Time.time-elapsedTime) * 10) / 10 ;
@@ -559,7 +573,15 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		closeHelpPanel();
         if (trainingPanel.activeSelf) ToggleMenus(trainingPanel);
         ToggleMenus(menuPanel);
+
+        if (menuPanel.activeSelf) Pause((int)ExerciseStatus.Pause);
+        else SetNewStatus((int)ExerciseStatus.Running);
 	}
+
+    private void SetNewStatus(int newStatus) {
+        _oldStatus = _status;
+        _status = newStatus;
+    }
 
 	public void ToggleTrainingMode() {
 		closeHelpPanel();

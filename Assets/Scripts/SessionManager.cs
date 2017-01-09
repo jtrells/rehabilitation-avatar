@@ -12,6 +12,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     private int _trainingMode;                          // specifies if the training is being done in Normal/Trajectory/Distorted mode/Trajectory+Distorted
     private int _perspective;                           // specifies if the user is in first/third person perspective
     private int _status;                                // status of the exercise based on the ExerciseStatus Enum
+    private int _currentCalibrationAxis;                // axis being calibrated: X, Y, Z
     private FlatAvatarController _avatarController;     // controls the avatar positioning by gathering the Kinect's values
     private CAVE2Manager cave2Manager;
 
@@ -58,6 +59,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     public int GetTrainingMode() { return _trainingMode; }
     public int GetPerspective()  { return _perspective; }
     public int GetStatus() { return _status; }
+    public int GetCalibrationAxis() { return _currentCalibrationAxis; }
     public FlatAvatarController GetAvatarController() { return _avatarController; } 
 
     public bool IsTrajectoryEnabled() { return (_trainingMode == (int)TrainingMode.Trajectory || _trainingMode == (int)TrainingMode.DistortedAndTrajectory); }
@@ -107,14 +109,64 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         labelHands.text = sb.ToString();
     }
 
-    public void Pause() {
+    public void Pause(int status) {
         isTimerStopped = true;
-        _status = (int) ExerciseStatus.Pause;
+        _status = status;
     }
 
     public void Resume() {
         isTimerStopped = false;
         _status = (int)ExerciseStatus.Running;
+    }
+
+    public void SwitchTrainingMode(bool dir) {
+        if (dir)
+            if (_trainingMode == (int)TrainingMode.DistortedAndTrajectory)
+                _trainingMode = (int)TrainingMode.Normal;
+            else _trainingMode++;
+        else
+            if (_trainingMode == (int)TrainingMode.Normal)
+                _trainingMode = (int)TrainingMode.DistortedAndTrajectory;
+            else _trainingMode--;
+
+        if (_trainingMode == (int)TrainingMode.Distorted) {
+            SetDistortedReality(true);
+            SetTrajectoryMode(false);
+        }
+        else if (_trainingMode == (int)TrainingMode.Trajectory) {
+            SetDistortedReality(false);
+            SetTrajectoryMode(true);
+        }
+        else if (_trainingMode == (int)TrainingMode.DistortedAndTrajectory) {
+            SetDistortedReality(true);
+            SetTrajectoryMode(true);
+        }
+        else if (_trainingMode == (int)TrainingMode.Normal) {
+            SetDistortedReality(false);
+            SetTrajectoryMode(false);
+        }
+    }
+
+    public void ToggleCalibrationMode() {
+        if (_status == (int)ExerciseStatus.Calibration){
+            _status = (int)ExerciseStatus.Running;
+            Resume();
+        }
+        else {
+            _status = (int)ExerciseStatus.Calibration;
+            Pause(_status);
+        }
+    }
+
+    public void SwitchCalibrationAxis(bool dir) {
+        if (dir)
+            if (_currentCalibrationAxis == (int)CalibrationAxis.Z)
+                _currentCalibrationAxis = (int)CalibrationAxis.X;
+            else _currentCalibrationAxis++;
+        else
+            if (_currentCalibrationAxis == (int)CalibrationAxis.X)
+                _currentCalibrationAxis = (int)CalibrationAxis.Z;
+            else _currentCalibrationAxis--;
     }
 
     private void ConfirmMethod(string message, ConfirmDelegate del)
@@ -463,9 +515,9 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			case "STOP": AbortSession(); break;
 			case "EXIT": ConfirmExit(); break;
 			case "MAP": ToggleMap(); break;
-			case "TRAJECTORY": ToogleTrajectoryMode(); break;
+			case "TRAJECTORY": SetTrajectoryMode(true); break;
 			case "FIRST PERSON": SetFirstPersonPerspective(); break;
-			case "DISTORTED REALITY": EnableDistortedReality(); break;
+			case "DISTORTED REALITY": SetDistortedReality(true); break;
 			case "THIRD PERSON": SetThirdPersonPerspective(); break;
 			case "MODE": case "TRAINING MODE": ShowTrainingModes(); break;
 			case "CLOSE": case "CLOSE MENU": CloseMenus(); break;
@@ -539,48 +591,20 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
     // Enable Distorted Reality Mode
-	public void EnableDistortedReality() {
-		
-		if(_trainingMode == (int)TrainingMode.Distorted || _trainingMode == (int)TrainingMode.DistortedAndTrajectory) {
-			_avatarController.SetDistortedReality(false);
-            if (_trainingMode == (int)TrainingMode.Distorted)
-                _trainingMode = (int)TrainingMode.Normal;
-            else _trainingMode = (int)TrainingMode.Trajectory;
-		}
-		else {
-            _avatarController.SetDistortedReality(true);
-            if (_trainingMode == (int)TrainingMode.Normal)
-                _trainingMode = (int)TrainingMode.Distorted;
-            else _trainingMode = (int)TrainingMode.DistortedAndTrajectory;
-        }
-
+	public void SetDistortedReality(bool val) {
+        _avatarController.SetDistortedReality(val);
 		PlayAudio("Start");
 		RegenerateLabelMode();
 	}
 
     // Enable trajectory mode
-    public void ToogleTrajectoryMode() {
-        bool trajectoryEnabled = false;
-
-        if (_trainingMode == (int)TrainingMode.Normal) {
-            _trainingMode = (int)TrainingMode.Trajectory;
-            trajectoryEnabled = true;
-        }
-        else if (_trainingMode == (int)TrainingMode.Distorted) {
-            _trainingMode = (int)TrainingMode.DistortedAndTrajectory;
-            trajectoryEnabled = true;
-        }
-        else if (_trainingMode == (int)TrainingMode.Trajectory)
-            _trainingMode = (int)TrainingMode.Normal;
-        else _trainingMode = (int)TrainingMode.Distorted;
-
-
+    public void SetTrajectoryMode(bool val) {
         TrailRenderer left = _avatarController.leftHand.GetComponent<TrailRenderer>();
         TrailRenderer right = _avatarController.rightHand.GetComponent<TrailRenderer>();
-        left.enabled = trajectoryEnabled;
-        right.enabled = trajectoryEnabled;
+        left.enabled = val;
+        right.enabled = val;
 
-        PlayAudio("Start");
+        if (val) PlayAudio("Start");
         RegenerateLabelMode();
     }
 

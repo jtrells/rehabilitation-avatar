@@ -2,7 +2,8 @@
     Preparing = 0,
     Running = 1,
     Finished = 2,
-    Pause = 3
+    Pause = 3,
+    Calibration = 4
 }
 
 enum Perspective {
@@ -22,4 +23,10 @@ enum TrainingType {
     Random = 2,
     ProgressiveDistance = 3,
     Custom = 4
+}
+
+enum CalibrationAxis {
+    X = 1,
+    Y = 2,
+    Z = 3
 }

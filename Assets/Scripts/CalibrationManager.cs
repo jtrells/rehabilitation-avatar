@@ -8,6 +8,7 @@ public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
     private static CalibrationManager instance;
 
     public GameObject kinect;
+
     private Config _configuration;
     private string _directoryPath;
 
@@ -66,9 +67,16 @@ public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
         }
     }
 
-    public void MoveKinectY(float offset) {
-        kinect.transform.position += new Vector3(0, offset, 0);
+    public void UpdateKinectPosition(float offset) {
+        int axis = SessionManager.GetInstance().GetCalibrationAxis();
+
+        if (axis == (int)CalibrationAxis.X) kinect.transform.position += new Vector3(offset, 0, 0);
+        else if (axis == (int)CalibrationAxis.Y) kinect.transform.position += new Vector3(0, offset, 0);
+        else kinect.transform.position += new Vector3(0, 0, offset);
+
         SessionManager.GetInstance().GetAvatarController().UpdateOffset();
+        _configuration.kinect_x = kinect.transform.position.x;
         _configuration.kinect_y = kinect.transform.position.y;
+        _configuration.kinect_z = kinect.transform.position.z;
     }
 }

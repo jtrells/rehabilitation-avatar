@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Xml;
 using System.IO;
+using System;
 
 public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
 {
@@ -36,27 +37,26 @@ public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
             doc.Load(Path.Combine(_directoryPath, "rehab-config.xml"));
 
             XmlNode node = doc.SelectSingleNode("config");
+            float kinectX = float.Parse(node.SelectSingleNode("kinect_x").InnerText);
             float kinectY = float.Parse(node.SelectSingleNode("kinect_y").InnerText);
             float kinectZ = float.Parse(node.SelectSingleNode("kinect_z").InnerText);
 
             _configuration = new Config();
+            _configuration.kinect_x = kinectX;
             _configuration.kinect_y = kinectY;
             _configuration.kinect_z = kinectZ;
 
-            Debug.Log("Path: " + Application.dataPath);
-            Debug.Log("Kinect position: " + _configuration.kinect_y + " ," + _configuration.kinect_z);
+            Debug.LogWarning("Reading configuration file from: " + Application.dataPath);
+            Debug.LogWarning("Kinect position: " + _configuration.kinect_y + " ," + _configuration.kinect_z);
 
-            getReal3D.RpcManager.call("SetKinectPosition", _configuration.kinect_y, _configuration.kinect_z);
-
-            
+            getReal3D.RpcManager.call("SetKinectPosition", _configuration.kinect_x, _configuration.kinect_y, _configuration.kinect_z);
         }
     }
 
     [getReal3D.RPC]
-    public void SetKinectPosition(float y, float z) {
-        kinect.transform.position = new Vector3(0, y, z);
+    public void SetKinectPosition(float x, float y, float z) {
+        kinect.transform.position = new Vector3(x, y, z);
     }
-
 
     public void Save() {
         if (getReal3D.Cluster.isMaster) {
@@ -67,8 +67,14 @@ public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
             node.SelectSingleNode("kinect_y").InnerText = _configuration.kinect_y.ToString();
             node.SelectSingleNode("kinect_z").InnerText = _configuration.kinect_z.ToString();
 
-            Debug.Log("Path: " + _directoryPath);
-            doc.Save(Path.Combine(_directoryPath, "rehab-config.xml"));
+            Debug.LogWarning("REHABJIM: saving rehab-config to " + _directoryPath);
+
+            try {
+                doc.Save(Path.Combine(_directoryPath, "rehab-config.xml"));
+            }
+            catch (Exception e) {
+                Debug.LogError(e.Message);
+            }
         }
     }
 

@@ -16,6 +16,8 @@ public class WandControls : MonoBehaviour {
         } else if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.Button3) || Input.GetKeyDown(KeyCode.KeypadEnter)) {    // X
             if (status == (int)ExerciseStatus.Running || status == (int)ExerciseStatus.Preparing)
                 if (ControlBouncing()) SessionManager.GetInstance().ToggleMenu();
+            else if (status == (int)ExerciseStatus.Calibration)
+                if (ControlBouncing()) CalibrationManager.GetInstance().Save();
         }
         else if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.ButtonRight)) {
             if (status == (int)ExerciseStatus.Preparing || status == (int)ExerciseStatus.Running) {

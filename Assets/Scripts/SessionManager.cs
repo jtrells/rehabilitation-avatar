@@ -105,6 +105,14 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         else if (_status == (int)ExerciseStatus.Calibration) status = "Calibration";
         else status = "other";
 
+        string oldstatus = "";
+        if (_oldStatus == (int)ExerciseStatus.Preparing) oldstatus = "Preparing";
+        else if (_oldStatus == (int)ExerciseStatus.Running) oldstatus = "Running";
+        else if (_oldStatus == (int)ExerciseStatus.Pause) oldstatus = "Pause";
+        else if (_oldStatus == (int)ExerciseStatus.Finished) oldstatus = "Finished";
+        else if (_oldStatus == (int)ExerciseStatus.Calibration) oldstatus = "Calibration";
+        else status = "other";
+
         string axis = "";
         if (_currentCalibrationAxis == (int)CalibrationAxis.X) axis = "X";
         else if (_currentCalibrationAxis == (int)CalibrationAxis.Y) axis = "Y";
@@ -113,6 +121,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
         StringBuilder sb = new StringBuilder();
         sb.Append("Status: ").Append(status).AppendLine();
+        sb.Append("Old Status: ").Append(oldstatus).AppendLine();
         sb.Append("Calibration Axis: ").Append(axis).AppendLine();
         sb.Append("Kinect Offset:").Append(GetFormattedPosition(kinectOffset)).AppendLine();
         sb.Append("Head: ").Append(GetFormattedPosition(firstPersonTransform)).AppendLine().AppendLine();
@@ -569,16 +578,19 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
 	public void ToggleMenu() {
 		closeHelpPanel();
+
         if (trainingPanel.activeSelf) ToggleMenus(trainingPanel);
         ToggleMenus(menuPanel);
 
         if (menuPanel.activeSelf) Pause((int)ExerciseStatus.Pause);
-        else SetNewStatus((int)ExerciseStatus.Running);
+        else Resume();
 	}
 
     private void SetNewStatus(int newStatus) {
-        if (_oldStatus != newStatus) _oldStatus = _status;
-        _status = newStatus;
+        if (newStatus != _status) {
+            _oldStatus = _status;
+            _status = newStatus;
+        } 
     }
 
 	public void ToggleTrainingMode() {

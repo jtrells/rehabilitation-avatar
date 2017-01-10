@@ -267,6 +267,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			labelLeft.text = "";
 			labelRight.text = "";
 			StopAllCoroutines();
+
+            Destroy(manager);
 		}
 		if (tutorialMode) {
 			StopAllCoroutines();

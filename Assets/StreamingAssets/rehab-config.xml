@@ -1,5 +1,5 @@
 <config>
-  <kinect_x>-0.01</kinect_y>
+  <kinect_x>-0.01</kinect_x>
   <kinect_y>0.23</kinect_y>
   <kinect_z>3.03</kinect_z>
 </config>

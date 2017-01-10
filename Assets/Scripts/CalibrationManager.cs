@@ -66,7 +66,8 @@ public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
             XmlNode node = doc.SelectSingleNode("config");
             node.SelectSingleNode("kinect_y").InnerText = _configuration.kinect_y.ToString();
             node.SelectSingleNode("kinect_z").InnerText = _configuration.kinect_z.ToString();
-
+            
+            _directoryPath.Replace("\\", "/");
             Debug.LogWarning("REHABJIM: saving rehab-config to " + _directoryPath);
 
             try {

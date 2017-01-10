@@ -87,6 +87,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
         // start scene in third person perspective
         SetThirdPersonPerspective();
+        _avatarController.UpdateOffset();
 
         //CreateObjectManager();
         // If the Main scene was called to start a training, then start the training
@@ -195,6 +196,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
     private void ConfirmMethod(string message, ConfirmDelegate del)
     {
+
         ToggleMenus(confirmPanel);
 
         //confirmPanel.SetActive(true);
@@ -283,6 +285,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			case 4: manager = gameObject.AddComponent<CustomGenerator> (); break;
 			}
 			if(manager != null && PlayerPrefs.GetInt("TrainingModeId")!=1) {
+                SetNewStatus((int)ExerciseStatus.Preparing);
 				StartCoroutine(StartCountdown());
 			}
 		}
@@ -505,6 +508,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			RestartConfirmed();
 		}
 		else {
+
 			ConfirmMethod ("", new ConfirmDelegate(RestartConfirmed));
 		}
 	}

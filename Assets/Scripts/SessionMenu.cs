@@ -18,7 +18,6 @@ public class SessionMenu : ScrollableMenu {
 
 					lastButtonUpdateTime = Time.time;
 					if (index > 0 && index <= 3) {
-						//SessionManager.GetInstance().ToggleMenu();
 						switch (index) {
 						case 1:
 							SessionManager.GetInstance ().RestartSession();

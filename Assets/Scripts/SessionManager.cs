@@ -128,12 +128,12 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
     public void Pause(int status) {
         isTimerStopped = true;
-        _status = status;
+        SetNewStatus(status);
     }
 
     public void Resume() {
         isTimerStopped = false;
-        _status = (int)ExerciseStatus.Running;
+        SetNewStatus(_oldStatus);
     }
 
     public void SwitchTrainingMode(bool dir) {
@@ -166,12 +166,10 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
     public void ToggleCalibrationMode() {
         if (_status == (int)ExerciseStatus.Calibration){
-            _status = (int)ExerciseStatus.Running;
             Resume();
         }
         else {
-            _status = (int)ExerciseStatus.Calibration;
-            Pause(_status);
+            Pause((int)ExerciseStatus.Calibration);
         }
     }
 
@@ -467,7 +465,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		GameObject vfx = (GameObject) GameObject.Instantiate (sessionCompleteAnimation, patientHips.transform.position, Quaternion.identity);
 		yield return new WaitForSeconds (2f);
 		if (getReal3D.Cluster.isMaster) {
-            _status = (int)ExerciseStatus.Finished;
+            SetNewStatus((int)ExerciseStatus.Finished);
             getReal3D.RpcManager.call("DisplayTrainingSummary", manager.GetNumberOfObjectsCaught(), manager.GetTotalElapsedTime());
             LogWriter.instance.WriteLogs(manager, _avatarController.jointsLog);
 		}
@@ -579,7 +577,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
     private void SetNewStatus(int newStatus) {
-        _oldStatus = _status;
+        if (_oldStatus != newStatus) _oldStatus = _status;
         _status = newStatus;
     }
 

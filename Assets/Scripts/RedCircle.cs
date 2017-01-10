@@ -1,20 +1,13 @@
 ﻿using UnityEngine;
-using System.Collections;
 
 public class RedCircle : MonoBehaviour {
 
-	// Use this for initialization
-	void Start () {
-	
-	}
-	
-	// Update is called once per frame
 	void Update () {
 	
 	}
 
 	void OnTriggerEnter(Collider other) {
-		if(other.gameObject.CompareTag("Foot")) {
+		if(other.gameObject.CompareTag("Foot") && SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Preparing) {
 			SessionManager.GetInstance().PatientInPosition();
 			Destroy(gameObject);
 		}

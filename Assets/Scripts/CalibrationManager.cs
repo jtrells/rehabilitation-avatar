@@ -15,6 +15,9 @@ public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
     public static CalibrationManager GetInstance() { return instance; }
     public void SetConfiguration(Config config) { _configuration = config; }
 
+    private int _numberRecords = 0;
+    private Vector3[] _records = new Vector3[3];
+    
     void Awake()
     {
         if (instance == null)
@@ -44,6 +47,8 @@ public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
             Debug.Log("Kinect position: " + _configuration.kinect_y + " ," + _configuration.kinect_z);
 
             getReal3D.RpcManager.call("SetKinectPosition", _configuration.kinect_y, _configuration.kinect_z);
+
+            
         }
     }
 
@@ -78,5 +83,13 @@ public class CalibrationManager : getReal3D.MonoBehaviourWithRpc
         _configuration.kinect_x = kinect.transform.position.x;
         _configuration.kinect_y = kinect.transform.position.y;
         _configuration.kinect_z = kinect.transform.position.z;
+    }
+
+    public void DrawPlane() {
+        Mesh mesh = new Mesh();
+        GetComponent<MeshFilter>().mesh = mesh;
+        mesh.vertices = _records;
+        mesh.uv = new Vector2[] { new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 1) };
+        mesh.triangles = new int[] { 0, 1, 2 };
     }
 }

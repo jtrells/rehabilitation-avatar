@@ -12,7 +12,8 @@ public class WandControls : MonoBehaviour {
             else
                 if (ControlBouncing()) SessionManager.GetInstance().ToggleHelpPanel();
         } else if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.Button3) || Input.GetKeyDown(KeyCode.KeypadEnter)) {    // X
-            if (SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Running)
+            if (SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Running ||
+                SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Preparing)
                 if (ControlBouncing()) SessionManager.GetInstance().ToggleMenu();
         }
         else if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.ButtonRight)) {
@@ -44,7 +45,6 @@ public class WandControls : MonoBehaviour {
             if (ControlBouncing()) {
                 if (SessionManager.GetInstance().GetStatus() == (int)ExerciseStatus.Pause) {
                     SessionManager.GetInstance().ToggleMenu();
-                    SessionManager.GetInstance().Resume();
                 }
                 else {
                     SessionManager.GetInstance().ToggleCalibrationMode();

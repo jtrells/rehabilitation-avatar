@@ -96,7 +96,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
     // Update the timer, timer text and patient joints log
     void Update() {
-        if (!isTimerStopped) UpdateTime();
+        if (!isTimerStopped && _status == (int)ExerciseStatus.Running) UpdateTime();
 
         string status = "";
         if (_status == (int)ExerciseStatus.Preparing) status = "Preparing";
@@ -491,9 +491,12 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		PlayAudio ("Victory");
 		GameObject vfx = (GameObject) GameObject.Instantiate (sessionCompleteAnimation, patientHips.transform.position, Quaternion.identity);
 		yield return new WaitForSeconds (2f);
-		if (getReal3D.Cluster.isMaster) {
-            SetNewStatus((int)ExerciseStatus.Finished);
-            getReal3D.RpcManager.call("DisplayTrainingSummary", manager.GetNumberOfObjectsCaught(), manager.GetTotalElapsedTime());
+
+        SetNewStatus((int)ExerciseStatus.Finished);
+        StopTimer();
+        getReal3D.RpcManager.call("DisplayTrainingSummary", manager.GetNumberOfObjectsCaught(), manager.GetTotalElapsedTime());
+
+        if (getReal3D.Cluster.isMaster) {
             LogWriter.instance.WriteLogs(manager, _avatarController.jointsLog);
 		}
 	}

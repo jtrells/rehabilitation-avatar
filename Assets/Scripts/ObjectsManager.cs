@@ -21,6 +21,7 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
     // Getters 
     public int GetNumberOfObjectsCaught() { return _objectsCaught; }
     public int GetNumberOfObjects() { return numberOfObjects; }
+    public int GetCurrentObjectNumber() { return currentObject; }
     public JSONArray GetObjectsData() { return objects; }
 
     void Start() {

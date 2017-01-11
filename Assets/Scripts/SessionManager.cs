@@ -120,11 +120,22 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         else if (_currentCalibrationAxis == (int)CalibrationAxis.Z) axis = "Z";
         else axis = "OTHER";
 
+        int noObjectsCaught = -1, noObjects = -1, currentObject = -1;
+        if (manager)
+        {
+            noObjects = manager.GetNumberOfObjects();
+            noObjectsCaught = manager.GetNumberOfObjectsCaught();
+            currentObject = manager.GetCurrentObjectNumber();
+        }
+
         StringBuilder sb = new StringBuilder();
         sb.Append("Status: ").Append(status).AppendLine();
         sb.Append("Old Status: ").Append(oldstatus).AppendLine();
         sb.Append("Calibration Axis: ").Append(axis).AppendLine();
         sb.Append("Kinect Offset:").Append(GetFormattedPosition(kinectOffset)).AppendLine();
+        sb.Append("Number objects caught: ").Append(noObjects).AppendLine();
+        sb.Append("Current object number: ").Append(currentObject).AppendLine();
+        sb.Append("Total objects: ").Append(noObjectsCaught).AppendLine();
         sb.Append("Head: ").Append(GetFormattedPosition(firstPersonTransform)).AppendLine().AppendLine();
         sb.Append("Shoulders: ").Append(GetFormattedPosition(_avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightShoulder)).AppendLine();
         sb.Append("Elbows:    ").Append(GetFormattedPosition(_avatarController.leftElbow)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightElbow)).AppendLine();

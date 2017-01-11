@@ -331,6 +331,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		PlayerPrefs.SetString("TrainingMode", modeName);
 		labelMode.text = modeName;
 
+        Debug.LogWarning("REHABJIM - Starting a new training " + modeName);
 		CreateObjectManager();
 		DisplayText("Please walk into the red circle");
 

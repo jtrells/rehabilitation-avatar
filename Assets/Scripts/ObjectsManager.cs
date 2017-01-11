@@ -31,6 +31,7 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
     // Track the time to see if the patient did not catch the object on time
     void Update() {
         if (currentObject > 0 && virtualObject != null && Time.time > allowedTime + appearTime) {
+            Debug.LogWarning("REHABJIM - Destroying object cuz it wasn't reached on time");
             Destroy(virtualObject);
             ObjectNotCaught(Time.time);
         }
@@ -38,6 +39,7 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 
     // Create a new object in the rehab exercise if still needed. Otherwise, it end the exercise session
     public void NextObject() {
+        Debug.LogWarning("REHABJIM - Getting next object from ObjectManager");
         currentObject++;
         SessionManager.GetInstance().StartTimer();
         SessionManager.GetInstance().UpdateCurrentObject(currentObject);

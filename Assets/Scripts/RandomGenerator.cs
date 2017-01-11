@@ -3,7 +3,7 @@ using System.Collections;
 
 public class RandomGenerator : ObjectsManager {
 
-	protected float yOffset = 1.65f, verticalBounds = 0.7f, horizontalBounds = 0.8f;
+	protected float yOffset = 1.4f, verticalBounds = 0.7f, horizontalBounds = 0.8f;
 
 	public RandomGenerator() {
 		numberOfObjects = 30;
@@ -12,15 +12,25 @@ public class RandomGenerator : ObjectsManager {
 	protected override Vector3 PositionNewObject() {
         Debug.LogWarning("REHABJIM - getting new position from RandomGenerator");
         FlatAvatarController patient = GameObject.FindGameObjectWithTag("Patient").GetComponent<FlatAvatarController>();
-		int d = SessionManager.GetInstance().GetPerspective() == (int) Perspective.Third ? 1 : 4;
-			Vector3 newPosition = new Vector3 (UnityEngine.Random.Range(-horizontalBounds, horizontalBounds), yOffset + UnityEngine.Random.Range(-verticalBounds/d, verticalBounds/d), SessionManager.GetInstance ().GetPatientPosition().z + 0.3f);
-			if(Mathf.Abs(newPosition.x) < xAvatarSize) {
+        Vector3 headPosition = SessionManager.GetInstance().GetCave2Manager().getHead(1).position;
+
+        int d = SessionManager.GetInstance().GetPerspective() == (int) Perspective.Third ? 1 : 4;
+        /*
+		Vector3 newPosition = 
+            new Vector3 (Random.Range(-horizontalBounds, horizontalBounds), 
+                         yOffset + Random.Range(-verticalBounds/d, verticalBounds/d), 
+                         SessionManager.GetInstance ().GetPatientPosition().z + 0.3f);*/
+        Vector3 newPosition = new Vector3(Random.Range(-horizontalBounds, horizontalBounds),
+                                          yOffset + Random.Range(10f, (headPosition.y - yOffset) + 20f),
+                                          SessionManager.GetInstance().GetPatientPosition().z + Random.Range(30f, 45f));
+
+        if (Mathf.Abs(newPosition.x) < xAvatarSize) {
 				if (newPosition.x > 0)
 					newPosition.x = newPosition.x + xAvatarSize;
 				else if(newPosition.x < 0)
 					newPosition.x = newPosition.x - xAvatarSize;
 			}
-			return newPosition;
+		return newPosition;
 	}
 
 	protected override void MakeRPCCall(Vector3 newPosition, Quaternion newQuaternion) {

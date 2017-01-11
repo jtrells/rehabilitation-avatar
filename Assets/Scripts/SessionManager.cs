@@ -12,6 +12,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     private int _trainingMode;                          // specifies if the training is being done in Normal/Trajectory/Distorted mode/Trajectory+Distorted
     private int _perspective;                           // specifies if the user is in first/third person perspective
     private int _status, _oldStatus;                    // status of the exercise based on the ExerciseStatus Enum
+    private string _statusName, _oldStatusName;         // store the scene status name just for calibration
+    private string _currentCalibrationAxisName;         // current axis value being calibrated
     private int _currentCalibrationAxis;                // axis being calibrated: X, Y, Z
     private FlatAvatarController _avatarController;     // controls the avatar positioning by gathering the Kinect's values
     private CAVE2Manager cave2Manager;
@@ -61,7 +63,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     public int GetPerspective()  { return _perspective; }
     public int GetStatus() { return _status; }
     public int GetCalibrationAxis() { return _currentCalibrationAxis; }
-    public FlatAvatarController GetAvatarController() { return _avatarController; } 
+    public FlatAvatarController GetAvatarController() { return _avatarController; }
+    public CAVE2Manager GetCave2Manager() { return cave2Manager; }
 
     public bool IsTrajectoryEnabled() { return (_trainingMode == (int)TrainingMode.Trajectory || _trainingMode == (int)TrainingMode.DistortedAndTrajectory); }
 
@@ -81,15 +84,17 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         patientHips = GameObject.FindGameObjectWithTag("Hips");
         audio = GetComponent<AudioSource>();
         _avatarController = patient.GetComponent<FlatAvatarController>();
+
         _currentCalibrationAxis = (int)CalibrationAxis.Y;
         _status = (int)ExerciseStatus.Preparing;
         _oldStatus = _status;
+        _statusName = "Preparing";
+        _oldStatusName = "Preparing";
 
         // start scene in third person perspective
         SetThirdPersonPerspective();
         _avatarController.UpdateOffset();
 
-        //CreateObjectManager();
         // If the Main scene was called to start a training, then start the training
         if (PlayerPrefs.HasKey("TrainingModeId")) StartNewTraining(PlayerPrefs.GetInt("TrainingModeId"));
     }
@@ -98,53 +103,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     void Update() {
         if (!isTimerStopped && _status == (int)ExerciseStatus.Running) UpdateTime();
 
-        string status = "";
-        if (_status == (int)ExerciseStatus.Preparing) status = "Preparing";
-        else if (_status == (int)ExerciseStatus.Running) status = "Running";
-        else if (_status == (int)ExerciseStatus.Pause) status = "Pause";
-        else if (_status == (int)ExerciseStatus.Finished) status = "Finished";
-        else if (_status == (int)ExerciseStatus.Calibration) status = "Calibration";
-        else status = "other";
-
-        string oldstatus = "";
-        if (_oldStatus == (int)ExerciseStatus.Preparing) oldstatus = "Preparing";
-        else if (_oldStatus == (int)ExerciseStatus.Running) oldstatus = "Running";
-        else if (_oldStatus == (int)ExerciseStatus.Pause) oldstatus = "Pause";
-        else if (_oldStatus == (int)ExerciseStatus.Finished) oldstatus = "Finished";
-        else if (_oldStatus == (int)ExerciseStatus.Calibration) oldstatus = "Calibration";
-        else status = "other";
-
-        string axis = "";
-        if (_currentCalibrationAxis == (int)CalibrationAxis.X) axis = "X";
-        else if (_currentCalibrationAxis == (int)CalibrationAxis.Y) axis = "Y";
-        else if (_currentCalibrationAxis == (int)CalibrationAxis.Z) axis = "Z";
-        else axis = "OTHER";
-
-        int noObjectsCaught = -1, noObjects = -1, currentObject = -1;
-        if (manager)
-        {
-            noObjects = manager.GetNumberOfObjects();
-            noObjectsCaught = manager.GetNumberOfObjectsCaught();
-            currentObject = manager.GetCurrentObjectNumber();
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.Append("Status: ").Append(status).AppendLine();
-        sb.Append("Old Status: ").Append(oldstatus).AppendLine();
-        sb.Append("Calibration Axis: ").Append(axis).AppendLine();
-        sb.Append("Kinect Offset:").Append(GetFormattedPosition(kinectOffset)).AppendLine();
-        sb.Append("Number objects caught: ").Append(noObjects).AppendLine();
-        sb.Append("Current object number: ").Append(currentObject).AppendLine();
-        sb.Append("Total objects: ").Append(noObjectsCaught).AppendLine();
-        sb.Append("Head: ").Append(GetFormattedPosition(firstPersonTransform)).AppendLine().AppendLine();
-        sb.Append("Shoulders: ").Append(GetFormattedPosition(_avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightShoulder)).AppendLine();
-        sb.Append("Elbows:    ").Append(GetFormattedPosition(_avatarController.leftElbow)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightElbow)).AppendLine();
-        sb.Append("Hands:     ").Append(GetFormattedPosition(_avatarController.leftHand)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHand)).AppendLine();
-        sb.Append("Hips:      ").Append(GetFormattedPosition(_avatarController.leftHip)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHip)).AppendLine();
-        sb.Append("Knees:     ").Append(GetFormattedPosition(_avatarController.leftKnee)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightKnee)).AppendLine();
-        sb.Append("Feet:      ").Append(GetFormattedPosition(_avatarController.leftFoot)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightFoot)).AppendLine();
-
-        labelHands.text = sb.ToString();
+        if (_status == (int)ExerciseStatus.Calibration)  ShowDebugInformation();
     }
 
     public void Pause(int status) {
@@ -157,6 +116,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         SetNewStatus(_oldStatus);
     }
 
+    // Switch between normal/distorted/trajectory/distorted&trajectory training modes
+    // A dir value of true switches to the right while a false value switches to the left
     public void SwitchTrainingMode(bool dir) {
         if (dir)
             if (_trainingMode == (int)TrainingMode.DistortedAndTrajectory)
@@ -185,32 +146,34 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         }
     }
 
+    // Enable/disable calibration mode. Calibration enters to a Pause state
+    // and stops the clock and interaction with objects
     public void ToggleCalibrationMode() {
-        if (_status == (int)ExerciseStatus.Calibration){
-            Resume();
-        }
-        else {
-            Pause((int)ExerciseStatus.Calibration);
-        }
+        if (_status == (int)ExerciseStatus.Calibration)Resume();
+        else Pause((int)ExerciseStatus.Calibration);
     }
 
+    // Switch the axis to calibrate between X/Y/Z. True switches to the 
+    // right while false switches to the left
     public void SwitchCalibrationAxis(bool dir) {
         if (dir)
-            if (_currentCalibrationAxis == (int)CalibrationAxis.Z)
+            if (_currentCalibrationAxis == (int)CalibrationAxis.Z) 
                 _currentCalibrationAxis = (int)CalibrationAxis.X;
             else _currentCalibrationAxis++;
         else
             if (_currentCalibrationAxis == (int)CalibrationAxis.X)
                 _currentCalibrationAxis = (int)CalibrationAxis.Z;
             else _currentCalibrationAxis--;
+
+        if (_currentCalibrationAxis == (int)CalibrationAxis.X) _currentCalibrationAxisName = "X";
+        else if (_currentCalibrationAxis == (int)CalibrationAxis.Y) _currentCalibrationAxisName = "Y";
+        else if (_currentCalibrationAxis == (int)CalibrationAxis.Z) _currentCalibrationAxisName = "Z";
+        else _currentCalibrationAxisName = "OTHER";
     }
 
     private void ConfirmMethod(string message, ConfirmDelegate del)
     {
-
         ToggleMenus(confirmPanel);
-
-        //confirmPanel.SetActive(true);
         currentDelegate = del;
     }
 
@@ -241,7 +204,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		while (!patientInsideCircle || _status != (int)ExerciseStatus.Preparing) {
 			yield return null;
 		}
-		//HideRedCircle();
+
 		patientInsideCircle = false;
 		for(int i=5; i>0; i--) {
 			DisplayText (".. " + i + " ..");
@@ -257,6 +220,35 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		yield return new WaitForSeconds(2f);
 		DisplayText ("");
 	}
+
+    private void ShowDebugInformation() {
+        int noObjectsCaught = -1, noObjects = -1, currentObject = -1;
+        if (manager) {
+            noObjects = manager.GetNumberOfObjects();
+            noObjectsCaught = manager.GetNumberOfObjectsCaught();
+            currentObject = manager.GetCurrentObjectNumber();
+        }
+
+        Vector3 headPosition = cave2Manager.getHead(1).position;
+
+        StringBuilder sb = new StringBuilder();
+        sb.Append("Status: ").Append(_statusName).AppendLine();
+        sb.Append("Old Status: ").Append(_oldStatusName).AppendLine();
+        sb.Append("Calibration Axis: ").Append(_currentCalibrationAxisName).AppendLine();
+        sb.Append("Kinect Offset:").Append(GetFormattedPosition(kinectOffset)).AppendLine().AppendLine();
+        sb.Append("Number objects: ").Append(noObjects).AppendLine();
+        sb.Append("Current object number: ").Append(currentObject).AppendLine();
+        sb.Append("Total objects caught: ").Append(noObjectsCaught).AppendLine().AppendLine();
+        sb.Append("Head:      ").Append("(" + headPosition.x + ", " + headPosition.y + ", " + headPosition.z + ")").AppendLine();
+        sb.Append("Shoulders: ").Append(GetFormattedPosition(_avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightShoulder)).AppendLine();
+        sb.Append("Elbows:    ").Append(GetFormattedPosition(_avatarController.leftElbow)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightElbow)).AppendLine();
+        sb.Append("Hands:     ").Append(GetFormattedPosition(_avatarController.leftHand)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHand)).AppendLine();
+        sb.Append("Hips:      ").Append(GetFormattedPosition(_avatarController.leftHip)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHip)).AppendLine();
+        sb.Append("Knees:     ").Append(GetFormattedPosition(_avatarController.leftKnee)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightKnee)).AppendLine();
+        sb.Append("Feet:      ").Append(GetFormattedPosition(_avatarController.leftFoot)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightFoot)).AppendLine();
+
+        labelHands.text = sb.ToString();
+    }
 
 	private void ShowRedCircle() {
 		if(redCircle == null) {
@@ -278,8 +270,6 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			labelLeft.text = "";
 			labelRight.text = "";
 			StopAllCoroutines();
-
-            //Destroy(manager);
 		}
 		if (tutorialMode) {
 			StopAllCoroutines();
@@ -612,6 +602,20 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         if (newStatus != _status) {
             _oldStatus = _status;
             _status = newStatus;
+
+            if (_status == (int)ExerciseStatus.Preparing) _statusName = "Preparing";
+            else if (_status == (int)ExerciseStatus.Running) _statusName = "Running";
+            else if (_status == (int)ExerciseStatus.Pause) _statusName = "Pause";
+            else if (_status == (int)ExerciseStatus.Finished) _statusName = "Finished";
+            else if (_status == (int)ExerciseStatus.Calibration) _statusName = "Calibration";
+            else _statusName = "other";
+
+            if (_oldStatus == (int)ExerciseStatus.Preparing) _oldStatusName = "Preparing";
+            else if (_oldStatus == (int)ExerciseStatus.Running) _oldStatusName = "Running";
+            else if (_oldStatus == (int)ExerciseStatus.Pause) _oldStatusName = "Pause";
+            else if (_oldStatus == (int)ExerciseStatus.Finished) _oldStatusName = "Finished";
+            else if (_oldStatus == (int)ExerciseStatus.Calibration) _oldStatusName = "Calibration";
+            else _oldStatusName = "other";
         } 
     }
 

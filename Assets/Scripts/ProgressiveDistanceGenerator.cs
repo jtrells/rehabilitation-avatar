@@ -21,7 +21,8 @@ public class ProgressiveDistanceGenerator : ObjectsManager {
 	}
 	
 	protected override Vector3 PositionNewObject() {
-		Vector3 newPosition = new Vector3();
+        Debug.LogWarning("REHABJIM - getting new position from ProgressiveGenerator");
+        Vector3 newPosition = new Vector3();
 		float z = SessionManager.GetInstance ().GetPatientPosition ().z + 0.1f;
 		switch (direction) {
 		case Direction.LEFT:
@@ -53,7 +54,8 @@ public class ProgressiveDistanceGenerator : ObjectsManager {
 	
 	[getReal3D.RPC]
 	private void CreateNewObjectRPC (Vector3 newPosition, Quaternion newQuaternion) {
-		virtualObject = (GameObject) GameObject.Instantiate (_objectPrefab, newPosition, newQuaternion);
+        Debug.LogWarning("REHABJIM - creating new rpc object from progressive");
+        virtualObject = (GameObject) GameObject.Instantiate (_objectPrefab, newPosition, newQuaternion);
 		virtualObject.GetComponent<VirtualObject> ().manager = this;
 		CreateOptimalTrajectory(newPosition);
 		appearTime = Time.time;

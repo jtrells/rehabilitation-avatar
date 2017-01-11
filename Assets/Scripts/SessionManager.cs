@@ -249,7 +249,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			yield return new WaitForSeconds(1f);
 		}
 
-        _status = (int) ExerciseStatus.Running;
+        SetNewStatus((int)ExerciseStatus.Running);
 
         CreateFirstObject();
 		PlayAudio ("Start");
@@ -279,7 +279,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			labelRight.text = "";
 			StopAllCoroutines();
 
-            Destroy(manager);
+            //Destroy(manager);
 		}
 		if (tutorialMode) {
 			StopAllCoroutines();
@@ -339,7 +339,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     }
 
 	private void CreateFirstObject() {
-		manager.NextObject ();
+        Debug.LogWarning("REHABJIM - create the first object");
+        manager.NextObject ();
 		elapsedTime = Time.time;
 	}
 

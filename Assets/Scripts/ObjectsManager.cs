@@ -54,6 +54,7 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
         else {
             if (getReal3D.Cluster.isMaster) {
                 _newObjectPosition = PositionNewObject();
+                Debug.LogWarning("REHABJIM - position for new object: " + _newObjectPosition.x + ", " + _newObjectPosition.y + ", " + _newObjectPosition.z);
                 MakeRPCCall(_newObjectPosition, Quaternion.identity);
             }
         }

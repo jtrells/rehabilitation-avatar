@@ -16,7 +16,8 @@ public class CustomGenerator : ObjectsManager {
 	}
 
 	protected override Vector3 PositionNewObject() {
-		JSONNode currentObj = customObjects[currentObject-1];
+        Debug.LogWarning("REHABJIM - getting new position from CustomGenerator");
+        JSONNode currentObj = customObjects[currentObject-1];
 		Vector3 newPosition = new Vector3 (currentObj["x"].AsFloat, currentObj["y"].AsFloat, SessionManager.GetInstance ().GetPatientPosition().z + currentObj["z"].AsFloat);
 		return newPosition;
 	}
@@ -28,7 +29,8 @@ public class CustomGenerator : ObjectsManager {
 
 	[getReal3D.RPC]
 	private void CreateNewObjectRPC (Vector3 newPosition, Quaternion newQuaternion) {
-		virtualObject = (GameObject) GameObject.Instantiate (_objectPrefab, newPosition, newQuaternion);
+        Debug.LogWarning("REHABJIM - creating new rpc object from custom");
+        virtualObject = (GameObject) GameObject.Instantiate (_objectPrefab, newPosition, newQuaternion);
 		virtualObject.GetComponent<VirtualObject> ().manager = this;
 		CreateOptimalTrajectory(newPosition);
 		appearTime = Time.time;

@@ -10,7 +10,8 @@ public class RandomGenerator : ObjectsManager {
 	}
 
 	protected override Vector3 PositionNewObject() {
-		FlatAvatarController patient = GameObject.FindGameObjectWithTag("Patient").GetComponent<FlatAvatarController>();
+        Debug.LogWarning("REHABJIM - getting new position from RandomGenerator");
+        FlatAvatarController patient = GameObject.FindGameObjectWithTag("Patient").GetComponent<FlatAvatarController>();
 		int d = SessionManager.GetInstance().GetPerspective() == (int) Perspective.Third ? 1 : 4;
 			Vector3 newPosition = new Vector3 (UnityEngine.Random.Range(-horizontalBounds, horizontalBounds), yOffset + UnityEngine.Random.Range(-verticalBounds/d, verticalBounds/d), SessionManager.GetInstance ().GetPatientPosition().z + 0.3f);
 			if(Mathf.Abs(newPosition.x) < xAvatarSize) {
@@ -29,7 +30,8 @@ public class RandomGenerator : ObjectsManager {
 
 	[getReal3D.RPC]
 	private void CreateNewObjectRPC (Vector3 newPosition, Quaternion newQuaternion) {
-		virtualObject = (GameObject) GameObject.Instantiate (_objectPrefab, newPosition, newQuaternion);
+        Debug.LogWarning("REHABJIM - creating new rpc object from random");
+        virtualObject = (GameObject) GameObject.Instantiate (_objectPrefab, newPosition, newQuaternion);
 		if(SessionManager.GetInstance().GetPerspective() != (int)Perspective.Third) {
 			virtualObject.transform.localScale = new Vector3(virtualObject.transform.localScale.x * 0.5f, virtualObject.transform.localScale.y * 0.5f, virtualObject.transform.localScale.z * 0.5f );
 		}

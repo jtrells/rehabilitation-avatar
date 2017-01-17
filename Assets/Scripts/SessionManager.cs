@@ -229,7 +229,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
             currentObject = manager.GetCurrentObjectNumber();
         }
 
-        Vector3 headPosition = cave2Manager.getHead(1).position;
+        //Vector3 headPosition = cave2Manager.getHead(1).position;
 
         StringBuilder sb = new StringBuilder();
         sb.Append("Status: ").Append(_statusName).AppendLine();
@@ -239,7 +239,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         sb.Append("Number objects: ").Append(noObjects).AppendLine();
         sb.Append("Current object number: ").Append(currentObject).AppendLine();
         sb.Append("Total objects caught: ").Append(noObjectsCaught).AppendLine().AppendLine();
-        sb.Append("Head:      ").Append("(" + headPosition.x + ", " + headPosition.y + ", " + headPosition.z + ")").AppendLine();
+        //sb.Append("Head:      ").Append("(" + headPosition.x + ", " + headPosition.y + ", " + headPosition.z + ")").AppendLine();
         sb.Append("Shoulders: ").Append(GetFormattedPosition(_avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightShoulder)).AppendLine();
         sb.Append("Elbows:    ").Append(GetFormattedPosition(_avatarController.leftElbow)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightElbow)).AppendLine();
         sb.Append("Hands:     ").Append(GetFormattedPosition(_avatarController.leftHand)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHand)).AppendLine();

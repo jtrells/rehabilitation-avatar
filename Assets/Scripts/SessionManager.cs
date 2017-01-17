@@ -90,6 +90,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         _oldStatus = _status;
         _statusName = "Preparing";
         _oldStatusName = "Preparing";
+        cave2Manager = GameObject.FindGameObjectWithTag("OmicronManager").GetComponent<CAVE2Manager>();
 
         // start scene in third person perspective
         SetThirdPersonPerspective();
@@ -102,8 +103,10 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     // Update the timer, timer text and patient joints log
     void Update() {
         if (!isTimerStopped && _status == (int)ExerciseStatus.Running) UpdateTime();
-
-        if (_status == (int)ExerciseStatus.Calibration)  ShowDebugInformation();
+        ShowDebugInformation();
+        /*
+        if (_status == (int)ExerciseStatus.Calibration) ShowDebugInformation();
+        else labelHands.enabled = false;*/
     }
 
     public void Pause(int status) {
@@ -222,6 +225,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 
     private void ShowDebugInformation() {
+        labelHands.enabled = true;
         int noObjectsCaught = -1, noObjects = -1, currentObject = -1;
         if (manager) {
             noObjects = manager.GetNumberOfObjects();
@@ -327,6 +331,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 
         // set the training mode and perspective to defaults
         _trainingMode = (int) TrainingMode.Normal;
+        SetTrajectoryMode(false);
+        SetDistortedReality(false);
     }
 
 	private void CreateFirstObject() {

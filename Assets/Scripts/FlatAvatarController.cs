@@ -228,9 +228,9 @@ public class FlatAvatarController : OmicronEventClient {
 	public void SetFirstPerson() {
 		_isThirdPerson = false;
 		protoGuyHead.SetActive(false);
-		protoGuyBody.SetActive(false);
+		protoGuyBody.SetActive(true);
 
-		foreach(GameObject g in bodyParts) g.SetActive(true);
+		//foreach(GameObject g in bodyParts) g.SetActive(true);
 	}
 
 	public void SetThirdPerson() {
@@ -238,6 +238,6 @@ public class FlatAvatarController : OmicronEventClient {
 		protoGuyHead.SetActive(true);
 		protoGuyBody.SetActive(true);
 
-		foreach(GameObject g in bodyParts) g.SetActive(false);
+		//foreach(GameObject g in bodyParts) g.SetActive(false);
 	}
 }

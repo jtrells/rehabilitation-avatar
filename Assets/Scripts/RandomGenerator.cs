@@ -21,8 +21,8 @@ public class RandomGenerator : ObjectsManager {
                          yOffset + Random.Range(-verticalBounds/d, verticalBounds/d), 
                          SessionManager.GetInstance ().GetPatientPosition().z + 0.3f);*/
         Vector3 newPosition = new Vector3(Random.Range(-horizontalBounds, horizontalBounds),
-                                          yOffset + Random.Range(10f, (headPosition.y - yOffset) + 20f),
-                                          SessionManager.GetInstance().GetPatientPosition().z + Random.Range(30f, 45f));
+                                          yOffset + Random.Range(10f, (headPosition.y - yOffset) + 20f)/100,
+                                          SessionManager.GetInstance().GetPatientPosition().z + Random.Range(30f, 45f)/100);
 
         if (Mathf.Abs(newPosition.x) < xAvatarSize) {
 				if (newPosition.x > 0)

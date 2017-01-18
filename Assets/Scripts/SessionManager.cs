@@ -103,10 +103,10 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     // Update the timer, timer text and patient joints log
     void Update() {
         if (!isTimerStopped && _status == (int)ExerciseStatus.Running) UpdateTime();
-        ShowDebugInformation();
-        /*
+        //ShowDebugInformation();
+        
         if (_status == (int)ExerciseStatus.Calibration) ShowDebugInformation();
-        else labelHands.enabled = false;*/
+        else labelHands.enabled = false;
     }
 
     public void Pause(int status) {

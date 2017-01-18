@@ -17,6 +17,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     private int _currentCalibrationAxis;                // axis being calibrated: X, Y, Z
     private FlatAvatarController _avatarController;     // controls the avatar positioning by gathering the Kinect's values
     private CAVE2Manager cave2Manager;
+    private float _virtualObjectScale;                  // scale used setting the diameter of a BasicObject
 
     public GameObject objectPrefab, menuPanel, trainingPanel, camDisplay, helpPanel, confirmPanel, mapPanel;
 	public Text textHint;
@@ -97,7 +98,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         _avatarController.UpdateOffset();
 
         // If the Main scene was called to start a training, then start the training
-        if (PlayerPrefs.HasKey("TrainingModeId")) StartNewTraining(PlayerPrefs.GetInt("TrainingModeId"));
+        if (PlayerPrefs.HasKey("TrainingModeId"))
+            StartNewTraining(PlayerPrefs.GetInt("TrainingModeId"));
     }
 
     // Update the timer, timer text and patient joints log
@@ -287,8 +289,11 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 		if(PlayerPrefs.HasKey("TrainingModeId")) {
 			switch(PlayerPrefs.GetInt("TrainingModeId")) {
 			case 1: StartCoroutine(Tutorial()); break;
-			case 2: manager = gameObject.AddComponent<RandomGenerator> (); break;
-			case 3: manager = gameObject.AddComponent<ProgressiveDistanceGenerator> (); break;
+			case 2: manager = gameObject.AddComponent<RandomGenerator> ();
+                              gameObject.GetComponent<RandomGenerator>().SetObjectScale(_virtualObjectScale);
+                              break;
+			case 3: manager = gameObject.AddComponent<ProgressiveDistanceGenerator> ();
+                              break;
 			case 4: manager = gameObject.AddComponent<CustomGenerator> (); break;
 			}
 			if(manager != null && PlayerPrefs.GetInt("TrainingModeId")!=1) {
@@ -301,6 +306,14 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	public void StartNewTraining(int trainingId) {
         _trainingType = trainingId;
 		PlayerPrefs.SetInt("TrainingModeId", trainingId);
+
+        _virtualObjectScale = 0.15f;
+        if (_trainingType == 2) {
+            if (PlayerPrefs.HasKey("random_objects_size"))
+                _virtualObjectScale = PlayerPrefs.GetInt("random_objects_size") / 100f;
+            else 
+                Debug.LogError("REHABJIM - No key found for random objects size");
+        }
 
         // if the exercise routine has not started or it has ended
         // Otherwise. The call was made from the confirmation popup
@@ -493,7 +506,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         getReal3D.RpcManager.call("DisplayTrainingSummary", manager.GetNumberOfObjectsCaught(), manager.GetTotalElapsedTime());
 
         if (getReal3D.Cluster.isMaster) {
-            LogWriter.instance.WriteLogs(manager, _avatarController.jointsLog);
+            LogWriter.instance.WriteLogs(manager, _avatarController.jointsLog, _virtualObjectScale);
 		}
 	}
     // End methods for finishing an exercise session ------------------------------------------------------------------------------------------------

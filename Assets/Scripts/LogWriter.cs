@@ -46,7 +46,7 @@ public class LogWriter : MonoBehaviour {
         Directory.CreateDirectory(_directoryPath);
     }
 
-    public void WriteLogs(ObjectsManager objectManager, ArrayList logPositions) {
+    public void WriteLogs(ObjectsManager objectManager, ArrayList logPositions, float objectScale) {
         Debug.Log("Starting to dump data to file: " + DateTime.Now.ToLongTimeString() );
 
         string trainingMode = PlayerPrefs.GetString("TrainingMode").Replace(" ", "");
@@ -55,6 +55,7 @@ public class LogWriter : MonoBehaviour {
 
         StringBuilder sb = new StringBuilder();
         sb.Append("{\"patient_id\":\"").Append(PlayerPrefs.GetString("PatientId")).Append("\",").AppendLine();
+        sb.Append("\"scale\":\"").Append(objectScale.ToString()).Append("\",").AppendLine();
         sb.Append("\"date\":\"").Append(DateTime.Now.ToLongDateString()).Append("\",").AppendLine();
         sb.Append("\"training_type\":\"").Append(PlayerPrefs.GetString("TrainingMode")).Append("\",").AppendLine();
         sb.Append("\"total_time\":\"").Append(objectManager.GetTotalElapsedTime()).Append("\",").AppendLine();

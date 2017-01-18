@@ -4,9 +4,14 @@ using System.Collections;
 public class RandomGenerator : ObjectsManager {
 
 	protected float yOffset = 1.4f, verticalBounds = 0.7f, horizontalBounds = 0.8f;
+    private float _virtualObjectScale;
+
+    public void SetObjectScale(float objectScale) {
+        _virtualObjectScale = objectScale;
+    }
 
 	public RandomGenerator() {
-		numberOfObjects = 30;
+		numberOfObjects = 20;
 	}
 
 	protected override Vector3 PositionNewObject() {
@@ -42,10 +47,15 @@ public class RandomGenerator : ObjectsManager {
 	private void CreateNewObjectRPC (Vector3 newPosition, Quaternion newQuaternion) {
         Debug.LogWarning("REHABJIM - creating new rpc object from random");
         virtualObject = (GameObject) GameObject.Instantiate (_objectPrefab, newPosition, newQuaternion);
+
+        /*
 		if(SessionManager.GetInstance().GetPerspective() != (int)Perspective.Third) {
 			virtualObject.transform.localScale = new Vector3(virtualObject.transform.localScale.x * 0.5f, virtualObject.transform.localScale.y * 0.5f, virtualObject.transform.localScale.z * 0.5f );
-		}
-		virtualObject.GetComponent<VirtualObject> ().manager = this;
+		}*/
+        virtualObject.transform.localScale =
+            new Vector3(virtualObject.transform.localScale.x * _virtualObjectScale, virtualObject.transform.localScale.y * _virtualObjectScale, virtualObject.transform.localScale.z * _virtualObjectScale);
+
+        virtualObject.GetComponent<VirtualObject> ().manager = this;
 		CreateOptimalTrajectory(newPosition);
 		appearTime = Time.time;
 	}

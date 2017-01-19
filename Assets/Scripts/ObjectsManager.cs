@@ -25,6 +25,7 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
     public JSONArray GetObjectsData() { return objects; }
 
     void Start() {
+        Debug.LogWarning("REHABJIM - Starting ObjectManager");
         _objectPrefab = Resources.Load("BasicObject");
     }
 

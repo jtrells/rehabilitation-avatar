@@ -10,12 +10,26 @@ public class VirtualObjectSize : MonoBehaviour {
 
     void Update () {
         int size = int.Parse(objectSizeLabel.text);
-        if (Input.GetKeyDown(KeyCode.RightArrow) || (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.ButtonRight))) {
+
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            if (ControlBouncing()) size--;
+            Debug.Log("---");
+        }
+        else if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            if (ControlBouncing()) size++;
+            Debug.Log("+++");
+        }
+        else if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.ButtonRight)) {
             if (ControlBouncing()) size++;
         }
-        else if (Input.GetKeyDown(KeyCode.LeftArrow) || (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.ButtonLeft))) {
-            if (ControlBouncing()) size++;
+        else if (CAVE2Manager.GetButtonDown(1, CAVE2Manager.Button.ButtonLeft))
+        {
+            if (ControlBouncing()) size--;
         }
+
+
         objectSizeLabel.text = size.ToString();
         PlayerPrefs.SetInt("random_objects_size", size);
     }

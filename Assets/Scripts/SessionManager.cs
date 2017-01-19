@@ -18,6 +18,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     private FlatAvatarController _avatarController;     // controls the avatar positioning by gathering the Kinect's values
     private CAVE2Manager cave2Manager;
     private float _virtualObjectScale;                  // scale used setting the diameter of a BasicObject
+    public GameObject _testObjects;
 
     public GameObject objectPrefab, menuPanel, trainingPanel, camDisplay, helpPanel, confirmPanel, mapPanel;
 	public Text textHint;
@@ -66,6 +67,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     public int GetCalibrationAxis() { return _currentCalibrationAxis; }
     public FlatAvatarController GetAvatarController() { return _avatarController; }
     public CAVE2Manager GetCave2Manager() { return cave2Manager; }
+    public float GetScale() { return _virtualObjectScale; }
 
     public bool IsTrajectoryEnabled() { return (_trainingMode == (int)TrainingMode.Trajectory || _trainingMode == (int)TrainingMode.DistortedAndTrajectory); }
 
@@ -154,8 +156,15 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
     // Enable/disable calibration mode. Calibration enters to a Pause state
     // and stops the clock and interaction with objects
     public void ToggleCalibrationMode() {
-        if (_status == (int)ExerciseStatus.Calibration)Resume();
-        else Pause((int)ExerciseStatus.Calibration);
+        if (_status == (int)ExerciseStatus.Calibration) {
+            Resume();
+            _testObjects.SetActive(false);
+        }
+        else
+        {
+            _testObjects.SetActive(true);
+            Pause((int)ExerciseStatus.Calibration);
+        }
     }
 
     // Switch the axis to calibrate between X/Y/Z. True switches to the 
@@ -254,6 +263,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         sb.Append("Feet:      ").Append(GetFormattedPosition(_avatarController.leftFoot)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightFoot)).AppendLine();
 
         labelHands.text = sb.ToString();
+
+        
     }
 
 	private void ShowRedCircle() {
@@ -287,10 +298,17 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			Destroy(o);
 		}
 		if(PlayerPrefs.HasKey("TrainingModeId")) {
-			switch(PlayerPrefs.GetInt("TrainingModeId")) {
+            if (gameObject.GetComponent<RandomGenerator>())
+                Destroy(gameObject.GetComponent<RandomGenerator>());
+            else if (gameObject.GetComponent<ProgressiveDistanceGenerator>())
+                Destroy(gameObject.GetComponent<ProgressiveDistanceGenerator>());
+            else if (gameObject.GetComponent<CustomGenerator>())
+                Destroy(gameObject.GetComponent<CustomGenerator>());
+
+            switch (PlayerPrefs.GetInt("TrainingModeId")) {
 			case 1: StartCoroutine(Tutorial()); break;
 			case 2: manager = gameObject.AddComponent<RandomGenerator> ();
-                              gameObject.GetComponent<RandomGenerator>().SetObjectScale(_virtualObjectScale);
+                              Debug.LogWarning("REHABJIM - Sending new scale:" + _virtualObjectScale.ToString());
                               break;
 			case 3: manager = gameObject.AddComponent<ProgressiveDistanceGenerator> ();
                               break;
@@ -314,6 +332,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
             else 
                 Debug.LogError("REHABJIM - No key found for random objects size");
         }
+        Debug.LogWarning("REHABJIM - scale:" + _virtualObjectScale.ToString());
 
         // if the exercise routine has not started or it has ended
         // Otherwise. The call was made from the confirmation popup

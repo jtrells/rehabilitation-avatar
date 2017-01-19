@@ -55,8 +55,12 @@ public class ProgressiveDistanceGenerator : ObjectsManager {
 	[getReal3D.RPC]
 	private void CreateNewObjectRPC (Vector3 newPosition, Quaternion newQuaternion) {
         Debug.LogWarning("REHABJIM - creating new rpc object from progressive");
+        float scale = SessionManager.GetInstance().GetScale();
         virtualObject = (GameObject) GameObject.Instantiate (_objectPrefab, newPosition, newQuaternion);
-		virtualObject.GetComponent<VirtualObject> ().manager = this;
+        virtualObject.transform.localScale =
+            new Vector3(virtualObject.transform.localScale.x * scale, virtualObject.transform.localScale.y * scale, virtualObject.transform.localScale.z * scale);
+
+        virtualObject.GetComponent<VirtualObject> ().manager = this;
 		CreateOptimalTrajectory(newPosition);
 		appearTime = Time.time;
 	}

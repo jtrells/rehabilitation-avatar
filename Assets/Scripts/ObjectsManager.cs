@@ -10,7 +10,7 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
     protected GameObject directionArrow;
 
     protected float appearTime;                 // time when the object appeared on scene. Set by the descendant classes
-    protected float allowedTime = 10f;          // amount of time allowed to catch an object
+    protected float allowedTime = 8f;          // amount of time allowed to catch an object
     protected int currentObject = 0;            // Number of current object
     protected int numberOfObjects;              // Total number of objects in the exercise
     protected int _objectsCaught = 0;           // Total number of objects caught during the exercise

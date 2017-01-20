@@ -7,7 +7,7 @@ public class RandomGenerator : ObjectsManager {
     private float _virtualObjectScale;
 
 	public RandomGenerator() {
-		numberOfObjects = 5;
+		numberOfObjects = 20;
 	}
 
 	protected override Vector3 PositionNewObject() {

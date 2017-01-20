@@ -26,6 +26,7 @@ public class FlatAvatarController : OmicronEventClient {
 	
 	public GameObject hips, leftHand, rightHand, leftElbow, rightElbow, leftShoulder, rightShoulder;
 	public GameObject leftHip, rightHip, leftKnee, rightKnee, leftFoot, rightFoot;
+    public GameObject spine;
 
 	public enum KinectHandState { Unknown, NotTracked, Open, Closed, Lasso };
 	private KinectHandState leftHandState, rightHandState;
@@ -79,9 +80,14 @@ public class FlatAvatarController : OmicronEventClient {
 		int sourceId = (int)e.sourceId;
 		if (bodyId != sourceId) return;
 
-		if (!_isDistortedReality) {
-			UpdateHipsPosition (e);
-			UpdateJointPosition (leftElbow, e, 7);
+        // 25 Spine mid
+        Vector3 newPosition = GetJointPosition(e, 25);
+        UpdateAndLogPosition(spine, 25, newPosition);
+
+        if (!_isDistortedReality) {
+			UpdateHipsPosition (e);            
+
+            UpdateJointPosition (leftElbow, e, 7);
 			UpdateJointPosition (rightElbow, e, 17);
 				
 			UpdateJointPosition (leftHand, e, 9);
@@ -138,6 +144,7 @@ public class FlatAvatarController : OmicronEventClient {
         if (jointId == 22) return "right_knee";
         if (jointId == 13) return "left_foot";
         if (jointId == 23) return "right_foot";
+        if (jointId == 25) return "spine_mid";
         return jointId.ToString();
     }
 

@@ -26,7 +26,7 @@ public class FlatAvatarController : OmicronEventClient {
 	
 	public GameObject hips, leftHand, rightHand, leftElbow, rightElbow, leftShoulder, rightShoulder;
 	public GameObject leftHip, rightHip, leftKnee, rightKnee, leftFoot, rightFoot;
-    public GameObject spine;
+    public GameObject spineMid, spineLow, spineShoulder, leftWrist, rightWrist, neck, head;
 
 	public enum KinectHandState { Unknown, NotTracked, Open, Closed, Lasso };
 	private KinectHandState leftHandState, rightHandState;
@@ -80,12 +80,17 @@ public class FlatAvatarController : OmicronEventClient {
 		int sourceId = (int)e.sourceId;
 		if (bodyId != sourceId) return;
 
-        // 25 Spine mid
-        Vector3 newPosition = GetJointPosition(e, 25);
-        UpdateAndLogPosition(spine, 25, newPosition);
+        UpdateJointPosition(spineMid, e, 25);
+        UpdateJointPosition(spineLow, e, 0);
+        UpdateJointPosition(neck, e, 2);
+        UpdateJointPosition(spineShoulder, e, 26);
+        UpdateJointPosition(head, e, 1);
 
         if (!_isDistortedReality) {
-			UpdateHipsPosition (e);            
+			UpdateHipsPosition (e);
+
+            UpdateJointPosition(leftWrist, e, 8);
+            UpdateJointPosition(rightWrist, e, 18);
 
             UpdateJointPosition (leftElbow, e, 7);
 			UpdateJointPosition (rightElbow, e, 17);
@@ -132,8 +137,13 @@ public class FlatAvatarController : OmicronEventClient {
 
     // Get the string value for each joint id for log purposes
     private string GetJointName(int jointId) {
+        if (jointId == 0) return "spine_base";
+        if (jointId == 1) return "head";
+        if (jointId == 2) return "neck";
         if (jointId == 7) return "left_elbow";
+        if (jointId == 8) return "left_wrist";
         if (jointId == 17) return "right_elbow";
+        if (jointId == 18) return "right_wrist";
         if (jointId == 9) return "left_hand";
         if (jointId == 19) return "right_hand";
         if (jointId == 6) return "left_shoulder";
@@ -145,6 +155,7 @@ public class FlatAvatarController : OmicronEventClient {
         if (jointId == 13) return "left_foot";
         if (jointId == 23) return "right_foot";
         if (jointId == 25) return "spine_mid";
+        if (jointId == 26) return "spine_shoulder";
         return jointId.ToString();
     }
 
@@ -161,6 +172,10 @@ public class FlatAvatarController : OmicronEventClient {
         positionLog["rw"].AsFloat = rotation.w;
 
         jointsLog.Add(positionLog.ToString());
+    }
+
+    public void CleanJointsLogs() {
+        jointsLog.Clear();
     }
 
     // Get new position and update localTransform value

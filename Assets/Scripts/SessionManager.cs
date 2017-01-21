@@ -334,13 +334,15 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         }
         Debug.LogWarning("REHABJIM - scale:" + _virtualObjectScale.ToString());
 
+        // Clean the logs from the FlatAvatarController
+        _avatarController.CleanJointsLogs();
+
         // if the exercise routine has not started or it has ended
         // Otherwise. The call was made from the confirmation popup
 		if(!manager || manager.isEnded())
 			StartNewTrainingConfirmed();
 		else 
 			ConfirmMethod("", StartNewTrainingConfirmed);
-		
 	}
 
 	private void StartNewTrainingConfirmed() {

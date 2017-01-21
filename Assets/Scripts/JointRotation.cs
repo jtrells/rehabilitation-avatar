@@ -9,11 +9,18 @@ public class JointRotation : MonoBehaviour {
 
 	public Transform leftHip, rightHip, leftKnee, rightKnee, leftFoot, rightFoot;
 	public Transform leftFinger, rightFinger;
+    public Transform leftWrist, rightWrist;
 	
 	void LateUpdate() {
+        /*
 		UpdateOrientation (leftElbow, leftHand);
 		UpdateOrientation (rightElbow, rightHand);
-		UpdateOrientation (leftShoulder, leftElbow);
+        try updating using the wrist instead of the hand*/
+        UpdateOrientation(leftElbow, leftWrist);
+        UpdateOrientation(rightElbow, rightWrist);
+        UpdateOrientation(leftHand, leftWrist);
+        UpdateOrientation(rightHand, rightWrist);
+        UpdateOrientation (leftShoulder, leftElbow);
 		UpdateOrientation (rightShoulder, rightElbow);
 
 		UpdateOrientationCustom (leftKnee, leftFoot, 0f, 90f, 0f);

@@ -83,7 +83,7 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
     }
 
     public void ObjectCaught(float caughtTime) {
-        LogObject(caughtTime);
+        LogObject(caughtTime, true);
         SessionManager.GetInstance().RestartTimer();
         _objectsCaught++;
         NextObject();
@@ -91,19 +91,19 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 
     private void ObjectNotCaught(float expirationTime) {
         SessionManager.GetInstance().StopTimer();
-        LogObject(expirationTime);
+        LogObject(expirationTime, false);
         SessionManager.GetInstance().RestartTimer();
         NextObject();
     }
 
-    private void LogObject(float time) {
+    private void LogObject(float time, bool caught) {
         if (getReal3D.Cluster.isMaster) {
             JSONNode objectLog = new JSONClass();
             objectLog["id"].AsInt = currentObject;
             objectLog["appear_time"].AsFloat = appearTime;
             objectLog["caught_time"].AsFloat = time;
             objectLog["time"].AsFloat = time - appearTime;
-            objectLog["reached"] = "Yes";
+            objectLog["reached"] = caught.ToString();
             objectLog["mode"].AsInt = SessionManager.GetInstance().GetTrainingMode();
             objectLog["pers"].AsInt = SessionManager.GetInstance().GetPerspective();
 

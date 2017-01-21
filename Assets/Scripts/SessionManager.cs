@@ -258,9 +258,11 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         sb.Append("Shoulders: ").Append(GetFormattedPosition(_avatarController.leftShoulder)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightShoulder)).AppendLine();
         sb.Append("Elbows:    ").Append(GetFormattedPosition(_avatarController.leftElbow)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightElbow)).AppendLine();
         sb.Append("Hands:     ").Append(GetFormattedPosition(_avatarController.leftHand)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHand)).AppendLine();
+        sb.Append("Hands Tips:").Append(GetFormattedPosition(_avatarController.leftHandTip)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHandTip)).AppendLine();
+        sb.Append("SpineMid:      ").Append(GetFormattedPosition(_avatarController.spineMid)).AppendLine();
         sb.Append("Hips:      ").Append(GetFormattedPosition(_avatarController.leftHip)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightHip)).AppendLine();
         sb.Append("Knees:     ").Append(GetFormattedPosition(_avatarController.leftKnee)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightKnee)).AppendLine();
-        sb.Append("Feet:      ").Append(GetFormattedPosition(_avatarController.leftFoot)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightFoot)).AppendLine();
+        sb.Append("Ankles:      ").Append(GetFormattedPosition(_avatarController.leftFoot)).Append(" - ").Append(GetFormattedPosition(_avatarController.rightFoot)).AppendLine();
 
         labelHands.text = sb.ToString();
 

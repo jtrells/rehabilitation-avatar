@@ -26,7 +26,7 @@ public class FlatAvatarController : OmicronEventClient {
 	
 	public GameObject hips, leftHand, rightHand, leftElbow, rightElbow, leftShoulder, rightShoulder;
 	public GameObject leftHip, rightHip, leftKnee, rightKnee, leftFoot, rightFoot;
-    public GameObject spineMid, spineLow, spineShoulder, leftWrist, rightWrist, neck, head;
+    public GameObject spineMid, spineLow, spineShoulder, leftWrist, rightWrist, neck, head, leftHandTip, rightHandTip, leftHandThumb, rightHandThumb;
 
 	public enum KinectHandState { Unknown, NotTracked, Open, Closed, Lasso };
 	private KinectHandState leftHandState, rightHandState;
@@ -85,6 +85,10 @@ public class FlatAvatarController : OmicronEventClient {
         UpdateJointPosition(neck, e, 2);
         UpdateJointPosition(spineShoulder, e, 26);
         UpdateJointPosition(head, e, 1);
+        UpdateJointPosition(leftHandTip, e, 10);
+        UpdateJointPosition(rightHandTip, e, 20);
+        UpdateJointPosition(leftHandThumb, e, 27);
+        UpdateJointPosition(rightHandThumb, e, 28);
 
         if (!_isDistortedReality) {
 			UpdateHipsPosition (e);
@@ -140,22 +144,26 @@ public class FlatAvatarController : OmicronEventClient {
         if (jointId == 0) return "spine_base";
         if (jointId == 1) return "head";
         if (jointId == 2) return "neck";
+        if (jointId == 6) return "left_shoulder";
         if (jointId == 7) return "left_elbow";
         if (jointId == 8) return "left_wrist";
+        if (jointId == 9) return "left_hand";
+        if (jointId == 10) return "left_hand_tip";
+        if (jointId == 11) return "left_hip";
+        if (jointId == 12) return "left_knee";
+        if (jointId == 13) return "left_ankle";
+        if (jointId == 16) return "right_shoulder";
         if (jointId == 17) return "right_elbow";
         if (jointId == 18) return "right_wrist";
-        if (jointId == 9) return "left_hand";
         if (jointId == 19) return "right_hand";
-        if (jointId == 6) return "left_shoulder";
-        if (jointId == 16) return "right_shoulder";
-        if (jointId == 11) return "left_hip";
+        if (jointId == 20) return "right_hand_tip";        
         if (jointId == 21) return "right_hip";
-        if (jointId == 12) return "left_knee";
-        if (jointId == 22) return "right_knee";
-        if (jointId == 13) return "left_foot";
-        if (jointId == 23) return "right_foot";
+        if (jointId == 22) return "right_knee";        
+        if (jointId == 23) return "right_ankle";
         if (jointId == 25) return "spine_mid";
         if (jointId == 26) return "spine_shoulder";
+        if (jointId == 27) return "left_hand_thumb";
+        if (jointId == 28) return "right_hand_thumb";       
         return jointId.ToString();
     }
 

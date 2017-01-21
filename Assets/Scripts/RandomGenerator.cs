@@ -11,30 +11,49 @@ public class RandomGenerator : ObjectsManager {
 	}
 
 	protected override Vector3 PositionNewObject() {
+        GameObject randomObjectReference = GameObject.Find("RandomObjectsReference");
+        randomObjectReference.transform.rotation = Quaternion.identity;
+
         Debug.LogWarning("REHABJIM - getting new position from RandomGenerator");
         FlatAvatarController patient = GameObject.FindGameObjectWithTag("Patient").GetComponent<FlatAvatarController>();
         Vector3 headPosition = SessionManager.GetInstance().GetCave2Manager().getHead(1).position;
 
-        //int d = SessionManager.GetInstance().GetPerspective() == (int) Perspective.Third ? 1 : 4;
+        Vector3 newPosition;
         /*
-		Vector3 newPosition = 
-            new Vector3 (Random.Range(-horizontalBounds, horizontalBounds), 
-                         yOffset + Random.Range(-verticalBounds/d, verticalBounds/d), 
-                         SessionManager.GetInstance ().GetPatientPosition().z + 0.3f);*/
-        Vector3 newPosition = new Vector3(Random.Range(-horizontalBounds, horizontalBounds),
-                                          yOffset + Random.Range(10f, (headPosition.y - yOffset) + 20f)/100,
-                                          SessionManager.GetInstance().GetPatientPosition().z + 0.5f);
-        
-        if (Mathf.Abs(newPosition.x) < xAvatarSize) {
+        = new Vector3(Random.Range(-horizontalBounds, horizontalBounds),
+                                      yOffset + Random.Range(10f, (headPosition.y - yOffset) + 20f)/100,
+                                      SessionManager.GetInstance().GetPatientPosition().z + 0.5f);*/
+        Vector3 posOnSurface = Random.onUnitSphere * 0.7f;
+        if (posOnSurface.y < 0) posOnSurface = new Vector3(posOnSurface.x, -posOnSurface.y, posOnSurface.z);
+        if (posOnSurface.z < 0) posOnSurface = new Vector3(posOnSurface.x, posOnSurface.y, -posOnSurface.z);
+
+        GameObject empty = new GameObject();
+        empty.transform.SetParent(randomObjectReference.transform);
+        empty.transform.position = posOnSurface;
+
+        Vector3 reference = new Vector3(posOnSurface.x, 0f, posOnSurface.z);
+        float angle = Vector3.Angle(reference, posOnSurface);
+
+        if (angle > 30) {
+            randomObjectReference.transform.Rotate(new Vector3(angle - 30, 0f, 0f));
+            randomObjectReference.transform.Rotate(new Vector3(Random.Range(0f, 29f), 0f, 0f));
+        }
+
+        posOnSurface = empty.transform.position;
+        newPosition = patient.spineShoulder.transform.position + posOnSurface;
+
+        Destroy(empty);
+        /*
+        if (Mathf.Abs(newPosition.x) < 10f) {
 				if (newPosition.x > 0)
-					newPosition.x = newPosition.x + xAvatarSize;
+					newPosition.x = newPosition.x + 10;
 				else if(newPosition.x < 0)
-					newPosition.x = newPosition.x - xAvatarSize;
-			}
-		return newPosition;
+					newPosition.x = newPosition.x - 10;
+			}*/
+        return newPosition;
 	}
 
-	protected override void MakeRPCCall(Vector3 newPosition, Quaternion newQuaternion) {
+    protected override void MakeRPCCall(Vector3 newPosition, Quaternion newQuaternion) {
 		getReal3D.RpcManager.call("CreateNewObjectRPC", newPosition, newQuaternion);
 	}
 

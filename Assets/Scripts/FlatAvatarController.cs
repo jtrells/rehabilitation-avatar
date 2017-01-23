@@ -38,6 +38,8 @@ public class FlatAvatarController : OmicronEventClient {
     public void SetDistortedReality(bool state) { _isDistortedReality = state; }
     public void UpdateOffset() { _offset = kinectManager.transform.position; }
 
+    private GameObject _head;
+
 	void Start() {
 		OmicronManager omicronManager = GameObject.FindGameObjectWithTag("OmicronManager").GetComponent<OmicronManager>();
 		omicronManager.AddClient(this);
@@ -45,6 +47,7 @@ public class FlatAvatarController : OmicronEventClient {
         // Set an offset on the Y axis as the kinect is above the ground
         // and the kinect's coordinate system is set at the infrared sensor
         _offset = kinectManager.transform.position;
+        _head = new GameObject();
     }
 
 	// Fecth data from the kinect in a Omicron Mocap EventData object. Update the data positions based on the sampling
@@ -84,11 +87,11 @@ public class FlatAvatarController : OmicronEventClient {
         UpdateJointPosition(spineLow, e, 0);
         UpdateJointPosition(neck, e, 2);
         UpdateJointPosition(spineShoulder, e, 26);
-        UpdateJointPosition(head, e, 1);
-        UpdateJointPosition(leftHandTip, e, 10);
-        UpdateJointPosition(rightHandTip, e, 20);
-        UpdateJointPosition(leftHandThumb, e, 27);
-        UpdateJointPosition(rightHandThumb, e, 28);
+
+        HeadTrackerState headTracker = SessionManager.GetInstance().GetCave2Manager().getHead(1);
+        _head.transform.position = headTracker.GetPosition();
+        _head.transform.rotation = headTracker.GetRotation();
+        UpdateJointPosition(_head, e, 1);
 
         if (!_isDistortedReality) {
 			UpdateHipsPosition (e);
@@ -115,9 +118,18 @@ public class FlatAvatarController : OmicronEventClient {
 			
 			UpdateJointPosition (leftFoot, e, 13);
 			UpdateJointPosition (rightFoot, e, 23);
-		} else {
+
+            UpdateJointPosition(leftHandTip, e, 10);
+            UpdateJointPosition(rightHandTip, e, 20);
+            UpdateJointPosition(leftHandThumb, e, 27);
+            UpdateJointPosition(rightHandThumb, e, 28);
+        } else {
 			UpdateHipsPositionDistorted(e);
-			UpdateJointPositionDistorted (leftElbow, e, 17);
+
+            UpdateJointPosition(leftWrist, e, 18);
+            UpdateJointPosition(rightWrist, e, 8);
+
+            UpdateJointPositionDistorted (leftElbow, e, 17);
 			UpdateJointPositionDistorted (rightElbow, e, 7);
 			
 			UpdateJointPositionDistorted (leftHand, e, 19);
@@ -134,7 +146,12 @@ public class FlatAvatarController : OmicronEventClient {
 			
 			UpdateJointPositionDistorted (leftFoot, e, 23);
 			UpdateJointPositionDistorted (rightFoot, e, 13);
-		}
+
+            UpdateJointPosition(leftHandTip, e, 20);
+            UpdateJointPosition(rightHandTip, e, 10);
+            UpdateJointPosition(leftHandThumb, e, 28);
+            UpdateJointPosition(rightHandThumb, e, 27);
+        }
 
 		lastUpdate = Time.time;
 	}
@@ -265,7 +282,7 @@ public class FlatAvatarController : OmicronEventClient {
 
 	public void SetThirdPerson() {
 		_isThirdPerson = true;
-		protoGuyHead.SetActive(true);
+		protoGuyHead.SetActive(false);
 		protoGuyBody.SetActive(true);
 
 		//foreach(GameObject g in bodyParts) g.SetActive(false);

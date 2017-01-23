@@ -15,8 +15,7 @@ public class RandomGenerator : ObjectsManager {
         randomObjectReference.transform.rotation = Quaternion.identity;
 
         Debug.LogWarning("REHABJIM - getting new position from RandomGenerator");
-        FlatAvatarController patient = GameObject.FindGameObjectWithTag("Patient").GetComponent<FlatAvatarController>();
-        Vector3 headPosition = SessionManager.GetInstance().GetCave2Manager().getHead(1).position;
+        FlatAvatarController patient = GameObject.FindGameObjectWithTag("Patient").GetComponent<FlatAvatarController>();        
 
         Vector3 newPosition;
         /*
@@ -34,9 +33,9 @@ public class RandomGenerator : ObjectsManager {
         Vector3 reference = new Vector3(posOnSurface.x, 0f, posOnSurface.z);
         float angle = Vector3.Angle(reference, posOnSurface);
 
-        if (angle > 30) {
-            randomObjectReference.transform.Rotate(new Vector3(angle - 30, 0f, 0f));
-            randomObjectReference.transform.Rotate(new Vector3(Random.Range(0f, 29f), 0f, 0f));
+        if (angle > 20) {
+            randomObjectReference.transform.Rotate(new Vector3(angle - 20, 0f, 0f));
+            randomObjectReference.transform.Rotate(new Vector3(Random.Range(0f, 20f), 0f, 0f));
         }
 
         posOnSurface = empty.transform.position;

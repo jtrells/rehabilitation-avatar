@@ -583,6 +583,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 	}
 	
 	public void VoiceCommand(string command) {
+        /*
 		PlayAudio ("Activation");
 		switch(command) {
 			case "RESTART": case "START": Invoke("RestartSession", 1f); break;
@@ -603,7 +604,7 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
 			case "HELP": ToggleHelpPanel(); break;
 			case "YES": VoiceYes(); break;
 			case "NO": VoiceNo(); break;
-		}
+		}*/
 	}
 
 	public void ToggleMap() {
@@ -722,7 +723,8 @@ public class SessionManager : getReal3D.MonoBehaviourWithRpc {
         _perspective = (int) Perspective.Third;
 
         // Positions and rotations calculated manually by moving the camera around during design
-        cameraController.transform.position = new Vector3(0, 1.2f, -9.1f);
+        //cameraController.transform.position = new Vector3(0, 1.2f, -9.1f);
+        cameraController.transform.position = new Vector3(0, 0.5f, -5.3f);
         cameraController.transform.eulerAngles = new Vector3(10.5f, 0, 0);
         _avatarController.SetThirdPerson();
 	}

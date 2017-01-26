@@ -33,9 +33,9 @@ public class RandomGenerator : ObjectsManager {
         Vector3 reference = new Vector3(posOnSurface.x, 0f, posOnSurface.z);
         float angle = Vector3.Angle(reference, posOnSurface);
 
-        if (angle > 20) {
-            randomObjectReference.transform.Rotate(new Vector3(angle - 20, 0f, 0f));
-            randomObjectReference.transform.Rotate(new Vector3(Random.Range(0f, 20f), 0f, 0f));
+        if (angle > 20f) {
+            randomObjectReference.transform.Rotate(new Vector3(angle - 20f, 0f, 0f));
+            randomObjectReference.transform.Rotate(new Vector3(Random.Range(5f, 20f), 0f, 0f));
         }
 
         posOnSurface = empty.transform.position;

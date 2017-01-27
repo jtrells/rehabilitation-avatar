@@ -31,14 +31,28 @@ public class RandomGenerator : ObjectsManager {
         empty.transform.position = posOnSurface;
 
         Vector3 reference = new Vector3(posOnSurface.x, 0f, posOnSurface.z);
-        float angle = Vector3.Angle(reference, posOnSurface);
+        float angle = Vector3.Angle(reference.normalized, posOnSurface.normalized);
 
-        if (angle > 20f) {
-            randomObjectReference.transform.Rotate(new Vector3(angle - 20f, 0f, 0f));
-            randomObjectReference.transform.Rotate(new Vector3(Random.Range(5f, 20f), 0f, 0f));
+        // remember unity is left hand sided
+        if (angle > 30f) {
+            Debug.LogWarning("Angle > 30 object:" + SessionManager.GetInstance().labelLeft.text + " - " + angle.ToString());
+            float angleWithZAxis = Mathf.Abs(Vector3.Angle(reference.normalized, new Vector3(0f, 0f, 1f)));
+            float xRotation = angle - 30f + Random.Range(5f, 25f);
+
+            if (posOnSurface.x < 0)
+                angleWithZAxis = -angleWithZAxis;
+
+            randomObjectReference.transform.Rotate(new Vector3(0f, angleWithZAxis, 0f));
+            randomObjectReference.transform.Rotate(new Vector3(xRotation, 0f, 0f));
+            randomObjectReference.transform.Rotate(new Vector3(0f, -angleWithZAxis, 0f));            
         }
 
         posOnSurface = empty.transform.position;
+
+        Vector3 reference2 = new Vector3(posOnSurface.x, 0f, posOnSurface.z);
+        float angle2 = Vector3.Angle(reference2.normalized, posOnSurface.normalized);
+        Debug.LogWarning("Position with angle: " + angle2);
+
         newPosition = patient.spineShoulder.transform.position + posOnSurface;
 
         Destroy(empty);

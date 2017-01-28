@@ -41,9 +41,18 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 
     // Create a new object in the rehab exercise if still needed. Otherwise, it end the exercise session
     public void NextObject() {
-        WaitNextObject();
+        StartCoroutine(WaitNextObject());        
+    }
+
+    public IEnumerator WaitNextObject()
+    {
+        SessionManager.GetInstance().StopTimer();
+        if (currentObject > 0 )
+            yield return new WaitForSeconds(1f);
+
         Debug.LogWarning("REHABJIM - Getting next object from ObjectManager");
         currentObject++;
+        SessionManager.GetInstance().RestartTimer();
         SessionManager.GetInstance().StartTimer();
         SessionManager.GetInstance().UpdateCurrentObject(currentObject);
 
@@ -51,23 +60,22 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
         if (directionArrow) ClearTrajectories();
 
         // if all the objects have been rendered, wait 1 second and end the session
-        if (currentObject == numberOfObjects + 1) {
+        if (currentObject == numberOfObjects + 1)
+        {
             SessionManager.GetInstance().StopTimer();
             Invoke("EndSession", 1f);
-            return;
+            yield return null;
         }
-        else {
-            if (getReal3D.Cluster.isMaster) {
+        else
+        {
+            if (getReal3D.Cluster.isMaster)
+            {
                 _newObjectPosition = PositionNewObject();
                 Debug.LogWarning("REHABJIM - position for new object: " + _newObjectPosition.x + ", " + _newObjectPosition.y + ", " + _newObjectPosition.z);
                 MakeRPCCall(_newObjectPosition, Quaternion.identity);
-            }
+            }            
         }
-    }
 
-    public IEnumerator WaitNextObject()
-    {
-        yield return new WaitForSeconds(1f);
     }
 
     virtual protected Vector3 PositionNewObject() { return Vector3.zero; }

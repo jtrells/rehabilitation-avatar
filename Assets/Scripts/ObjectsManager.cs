@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using SimpleJSON;
+using System.Collections;
 
 public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 
@@ -40,6 +41,7 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
 
     // Create a new object in the rehab exercise if still needed. Otherwise, it end the exercise session
     public void NextObject() {
+        WaitNextObject();
         Debug.LogWarning("REHABJIM - Getting next object from ObjectManager");
         currentObject++;
         SessionManager.GetInstance().StartTimer();
@@ -61,6 +63,11 @@ public class ObjectsManager : getReal3D.MonoBehaviourWithRpc {
                 MakeRPCCall(_newObjectPosition, Quaternion.identity);
             }
         }
+    }
+
+    public IEnumerator WaitNextObject()
+    {
+        yield return new WaitForSeconds(1f);
     }
 
     virtual protected Vector3 PositionNewObject() { return Vector3.zero; }

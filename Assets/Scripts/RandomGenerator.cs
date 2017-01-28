@@ -11,10 +11,9 @@ public class RandomGenerator : ObjectsManager {
 	}
 
 	protected override Vector3 PositionNewObject() {
-        GameObject randomObjectReference = GameObject.Find("RandomObjectsReference");
-        randomObjectReference.transform.rotation = Quaternion.identity;
+        //GameObject randomObjectReference = GameObject.Find("RandomObjectsReference");
+        //randomObjectReference.transform.rotation = Quaternion.identity;
 
-        Debug.LogWarning("REHABJIM - getting new position from RandomGenerator");
         FlatAvatarController patient = GameObject.FindGameObjectWithTag("Patient").GetComponent<FlatAvatarController>();        
 
         Vector3 newPosition;
@@ -26,14 +25,16 @@ public class RandomGenerator : ObjectsManager {
         if (posOnSurface.y < 0) posOnSurface = new Vector3(posOnSurface.x, -posOnSurface.y, posOnSurface.z);
         if (posOnSurface.z < 0) posOnSurface = new Vector3(posOnSurface.x, posOnSurface.y, -posOnSurface.z);
 
+        /*
         GameObject empty = new GameObject();
         empty.transform.SetParent(randomObjectReference.transform);
         empty.transform.position = posOnSurface;
 
         Vector3 reference = new Vector3(posOnSurface.x, 0f, posOnSurface.z);
-        float angle = Vector3.Angle(reference.normalized, posOnSurface.normalized);
+        float angle = Vector3.Angle(reference.normalized, posOnSurface.normalized); */
 
         // remember unity is left hand sided
+        /* Do not use angle correction
         if (angle > 30f) {
             Debug.LogWarning("Angle > 30 object:" + SessionManager.GetInstance().labelLeft.text + " - " + angle.ToString());
             float angleWithZAxis = Mathf.Abs(Vector3.Angle(reference.normalized, new Vector3(0f, 0f, 1f)));
@@ -52,10 +53,11 @@ public class RandomGenerator : ObjectsManager {
         Vector3 reference2 = new Vector3(posOnSurface.x, 0f, posOnSurface.z);
         float angle2 = Vector3.Angle(reference2.normalized, posOnSurface.normalized);
         Debug.LogWarning("Position with angle: " + angle2);
+        */
 
         newPosition = patient.spineShoulder.transform.position + posOnSurface;
 
-        Destroy(empty);
+        //Destroy(empty);
         /*
         if (Mathf.Abs(newPosition.x) < 10f) {
 				if (newPosition.x > 0)
